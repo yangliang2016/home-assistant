@@ -30,9 +30,6 @@ apcaccess==0.0.4
 # homeassistant.components.sun
 astral==1.2
 
-# homeassistant.components.sensor.swiss_hydrological_data
-beautifulsoup4==4.4.1
-
 # homeassistant.components.light.blinksticklight
 blinkstick==1.1.7
 
@@ -85,7 +82,7 @@ fuzzywuzzy==0.11.0
 gntp==1.0.3
 
 # homeassistant.components.sensor.google_travel_time
-googlemaps==2.4.3
+googlemaps==2.4.4
 
 # homeassistant.components.mqtt.server
 hbmqtt==0.7.1
@@ -128,6 +125,9 @@ https://github.com/danieljkemp/onkyo-eiscp/archive/python3.zip#onkyo-eiscp==0.9.
 # homeassistant.components.device_tracker.fritz
 # https://github.com/deisi/fritzconnection/archive/b5c14515e1c8e2652b06b6316a7f3913df942841.zip#fritzconnection==0.4.6
 
+# homeassistant.components.switch.tplink
+https://github.com/gadgetreactor/pyHS100/archive/master.zip#pyHS100==0.1.2
+
 # homeassistant.components.netatmo
 https://github.com/jabesq/netatmo-api-python/archive/v0.5.0.zip#lnetatmo==0.5.0
 
@@ -139,6 +139,10 @@ https://github.com/kellerza/pyqwikswitch/archive/v0.4.zip#pyqwikswitch==0.4
 
 # homeassistant.components.ecobee
 https://github.com/nkgilley/python-ecobee-api/archive/4856a704670c53afe1882178a89c209b5f98533d.zip#python-ecobee==0.0.6
+
+# homeassistant.components.joaoapps_join
+# homeassistant.components.notify.joaoapps_join
+https://github.com/nkgilley/python-join-api/archive/3e1e849f1af0b4080f551b62270c6d244d5fbcbd.zip#python-join-api==0.0.1
 
 # homeassistant.components.switch.edimax
 https://github.com/rkabadi/pyedimax/archive/365301ce3ff26129a7910c501ead09ea625f3700.zip#pyedimax==0.1
@@ -172,6 +176,9 @@ insteon_hub==0.4.5
 
 # homeassistant.components.media_player.kodi
 jsonrpc-requests==0.3
+
+# homeassistant.components.knx
+knxip==0.3.0
 
 # homeassistant.components.light.lifx
 liffylights==0.9.4
@@ -242,7 +249,7 @@ pushetta==1.0.15
 py-cpuinfo==0.2.3
 
 # homeassistant.components.rfxtrx
-pyRFXtrx==0.8.0
+pyRFXtrx==0.9.0
 
 # homeassistant.components.notify.xmpp
 pyasn1-modules==0.0.8
@@ -270,7 +277,7 @@ pyenvisalink==1.0
 pyfttt==0.3
 
 # homeassistant.components.homematic
-pyhomematic==0.1.8
+pyhomematic==0.1.9
 
 # homeassistant.components.device_tracker.icloud
 pyicloud==0.8.3
@@ -279,7 +286,7 @@ pyicloud==0.8.3
 pylast==1.6.0
 
 # homeassistant.components.sensor.loopenergy
-pyloopenergy==0.0.13
+pyloopenergy==0.0.14
 
 # homeassistant.components.device_tracker.netgear
 pynetgear==0.3.3
@@ -320,7 +327,7 @@ python-nmap==0.6.0
 python-pushover==0.2
 
 # homeassistant.components.notify.telegram
-python-telegram-bot==4.3.2
+python-telegram-bot==4.3.3
 
 # homeassistant.components.sensor.twitch
 python-twitch==1.2.0
@@ -381,7 +388,7 @@ somecomfort==0.2.1
 speedtest-cli==0.3.4
 
 # homeassistant.components.recorder
-sqlalchemy==1.0.13
+sqlalchemy==1.0.14
 
 # homeassistant.components.http
 static3==0.7.0
@@ -407,7 +414,7 @@ transmissionrpc==0.11
 twilio==5.4.0
 
 # homeassistant.components.sensor.uber
-uber_rides==0.2.1
+uber_rides==0.2.4
 
 # homeassistant.components.device_tracker.unifi
 unifi==1.2.5
@@ -430,8 +437,12 @@ websocket-client==0.37.0
 # homeassistant.components.zigbee
 xbee-helper==0.0.7
 
+# homeassistant.components.sensor.swiss_hydrological_data
 # homeassistant.components.sensor.yr
-xmltodict
+xmltodict==0.10.2
+
+# homeassistant.components.sensor.yweather
+yahooweather==0.4
 
 # homeassistant.components.zeroconf
-zeroconf==0.17.5
+zeroconf==0.17.6
