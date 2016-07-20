@@ -9,11 +9,12 @@ import logging
 import socket
 import voluptuous as vol
 
-from homeassistant.components.light import Light
+from homeassistant.components.light import (ATTR_BRIGHTNESS, ATTR_RGB_COLOR,
+                                            Light)
 import homeassistant.helpers.config_validation as cv
 
-REQUIREMENTS = ['https://github.com/Danielhiversen/flux_led/archive/0.3.zip'
-                '#flux_led==0.3']
+REQUIREMENTS = ['https://github.com/Danielhiversen/flux_led/archive/master.zip'
+                '#flux_led==0.4']
 
 _LOGGER = logging.getLogger(__name__)
 DOMAIN = "flux_led"
@@ -96,8 +97,25 @@ class FluxLight(Light):
         """Return true if device is on."""
         return self._bulb.isOn()
 
+    @property
+    def brightness(self):
+        """Return the brightness of this light between 0..255."""
+        return self._bulb.getWarmWhite255()
+
+    @property
+    def rgb_color(self):
+        """Return the color property."""
+        return self._bulb.getRgb()
+
     def turn_on(self, **kwargs):
         """Turn the specified or all lights on."""
+        rgb = kwargs.get(ATTR_RGB_COLOR)
+        brightness = kwargs.get(ATTR_BRIGHTNESS)
+        if rgb:
+            self._bulb.setRgb(*tuple(rgb))
+        elif brightness:
+            self._bulb.setWarmWhite255(brightness)
+
         self._bulb.turnOn()
 
     def turn_off(self, **kwargs):
