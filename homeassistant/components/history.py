@@ -193,7 +193,7 @@ def get_state(utc_point_in_time, entity_id, run=None):
 # pylint: disable=unused-argument
 def setup(hass, config):
     """Setup the history hooks."""
-    hass.wsgi.register_view(Last5StatesView(hass, config))
+    hass.wsgi.register_view(Last5StatesView)
     hass.wsgi.register_view(HistoryPeriodView(hass, config))
     register_built_in_panel(hass, 'history', 'History', 'mdi:poll-box')
 
@@ -205,11 +205,6 @@ class Last5StatesView(HomeAssistantView):
 
     url = '/api/history/entity/<entity:entity_id>/recent_states'
     name = 'api:history:entity-recent-states'
-
-    def __init__(self, hass, config):
-         """Initialize the Last5StatesView view."""
-         super().__init__(hass)
-         self.config = config
 
     def get(self, request, entity_id):
         """Retrieve last 5 states of entity."""
