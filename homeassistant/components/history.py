@@ -61,11 +61,10 @@ def get_significant_states(start_time, end_time=None, entity_id=None,
     """
     states = recorder.get_model('States')
 
-    if config:
-        conf = config[DOMAIN]
+    conf = config[DOMAIN]
 
-    whitelist_entities = conf.get(CONF_WHITELIST_ENTITIES)
-    whitelist_domains = conf.get(CONF_WHITELIST_DOMAINS)
+    whitelist_entities = conf[CONF_WHITELIST_ENTITIES]
+    whitelist_domains = conf[CONF_WHITELIST_DOMAINS]
     _LOGGER.debug("Whitelisted entities: %s", whitelist_entities)
     _LOGGER.debug("Whitelisted domains: %s", whitelist_domains)
     if whitelist_entities and whitelist_domains:
