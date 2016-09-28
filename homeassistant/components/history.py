@@ -25,16 +25,13 @@ _LOGGER = logging.getLogger(__name__)
 SIGNIFICANT_DOMAINS = ('thermostat',)
 IGNORE_DOMAINS = ('zone', 'scene',)
 
-CONF_WHITELIST = 'whitelist'
 CONF_WHITELIST_ENTITIES = 'whitelist_entities'
 CONF_WHITELIST_DOMAINS = 'whitelist_domains'
 
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
-        CONF_WHITELIST: vol.Schema({
-            vol.Optional(CONF_WHITELIST_ENTITIES, default=[]): cv.ensure_list,
-            vol.Optional(CONF_WHITELIST_DOMAINS, default=[]): cv.ensure_list
-        }),
+        vol.Optional(CONF_WHITELIST_ENTITIES, default=[]): cv.ensure_list,
+        vol.Optional(CONF_WHITELIST_DOMAINS, default=[]): cv.ensure_list
     }),
 }, extra=vol.ALLOW_EXTRA)
 
@@ -51,7 +48,8 @@ def last_5_states(entity_id):
         ).order_by(states.state_id.desc()).limit(5))
 
 
-def get_significant_states(start_time, end_time=None, entity_id=None, config=None):
+def get_significant_states(start_time, end_time=None, entity_id=None,
+                           config=None):
     """
     Return states changes during UTC period start_time - end_time.
 
@@ -63,34 +61,31 @@ def get_significant_states(start_time, end_time=None, entity_id=None, config=Non
     """
     states = recorder.get_model('States')
 
-    whitelist = config[DOMAIN].get(CONF_WHITELIST, None)
-    if whitelist:
-        whitelist_entities = whitelist[CONF_WHITELIST_ENTITIES]
-        whitelist_domains = whitelist[CONF_WHITELIST_DOMAINS]
-        _LOGGER.debug("DEBUGG entities %s", whitelist_entities)
-        _LOGGER.debug("DEBUGG domains %s", whitelist_domains)
-        if (whitelist_entities and whitelist_domains):
-            _LOGGER.debug("DEBUGG process 2 %s", states)
-            query = recorder.query('States').filter(
-                (states.domain.in_(whitelist_domains) |
-                (states.entity_id.in_(whitelist_entities))))
+    conf = config[DOMAIN]
 
-        elif whitelist_entities and not whitelist_domains:
-            _LOGGER.debug("DEBUGG process entities %s", states)
-            query = recorder.query('States').filter(
-                (states.entity_id.in_(whitelist_entities)))
+    whitelist_entities = conf.get(CONF_WHITELIST_ENTITIES)
+    whitelist_domains = conf.get(CONF_WHITELIST_DOMAINS)
+    _LOGGER.debug("Whitelisted entities: %s", whitelist_entities)
+    _LOGGER.debug("Whitelisted domains: %s", whitelist_domains)
+    if (whitelist_entities and whitelist_domains):
+        query = recorder.query('States').filter(
+            (states.domain.in_(whitelist_domains)) |
+            (states.entity_id.in_(whitelist_entities)))
 
-        else:
-            _LOGGER.debug("DEBUGG process domains %s", states)
-            query = recorder.query('States').filter(
-                (states.domain.in_(whitelist_domains)))
+    elif whitelist_entities and not whitelist_domains:
+        query = recorder.query('States').filter(
+            (states.entity_id.in_(whitelist_entities)))
+
+    elif whitelist_domains and not whitelist_entities:
+        query = recorder.query('States').filter(
+            (states.domain.in_(whitelist_domains)))
 
     else:
         query = recorder.query('States').filter(
             (states.domain.in_(SIGNIFICANT_DOMAINS) |
-            (states.last_changed == states.last_updated)) &
+                (states.last_changed == states.last_updated)) &
             ((~states.domain.in_(IGNORE_DOMAINS)) &
-            (states.last_updated > start_time)))
+                (states.last_updated > start_time)))
 
     if end_time is not None:
         query = query.filter(states.last_updated < end_time)
@@ -219,9 +214,9 @@ class HistoryPeriodView(HomeAssistantView):
     extra_urls = ['/api/history/period/<datetime:datetime>']
 
     def __init__(self, hass, config):
-         """Initialize the HistoryPeriodView view."""
-         super().__init__(hass)
-         self.config = config
+        """Initialize the HistoryPeriodView view."""
+        super().__init__(hass)
+        self.config = config
 
     def get(self, request, datetime=None):
         """Return history over a period of time."""
@@ -236,7 +231,8 @@ class HistoryPeriodView(HomeAssistantView):
         entity_id = request.args.get('filter_entity_id')
 
         return self.json(
-            get_significant_states(start_time, end_time, entity_id, self.config).values())
+            get_significant_states(start_time, end_time, entity_id,
+                                   self.config).values())
 
 
 def _is_significant(state):
