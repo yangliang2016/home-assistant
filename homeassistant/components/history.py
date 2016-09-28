@@ -7,11 +7,15 @@ https://home-assistant.io/components/history/
 from collections import defaultdict
 from datetime import timedelta
 from itertools import groupby
+import logging
+
+import voluptuous as vol
 
 import homeassistant.util.dt as dt_util
 from homeassistant.components import recorder, script
 from homeassistant.components.frontend import register_built_in_panel
 from homeassistant.components.http import HomeAssistantView
+import homeassistant.helpers.config_validation as cv
 
 DOMAIN = 'history'
 DEPENDENCIES = ['recorder', 'http']
@@ -19,6 +23,7 @@ DEPENDENCIES = ['recorder', 'http']
 SIGNIFICANT_DOMAINS = ('thermostat',)
 IGNORE_DOMAINS = ('zone', 'scene',)
 
+_LOGGER = logging.getLogger(__name__)
 
 def last_5_states(entity_id):
     """Return the last 5 states for entity_id."""
@@ -151,6 +156,9 @@ def setup(hass, config):
     hass.wsgi.register_view(Last5StatesView)
     hass.wsgi.register_view(HistoryPeriodView)
     register_built_in_panel(hass, 'history', 'History', 'mdi:poll-box')
+
+    whitelist = config.get(CONF_WHITELIST, None)
+    _LOGGER.debug('MMMMM %s', whitelist)
 
     return True
 
