@@ -61,7 +61,8 @@ def get_significant_states(start_time, end_time=None, entity_id=None,
     """
     states = recorder.get_model('States')
 
-    conf = config[DOMAIN]
+    if config:
+        conf = config[DOMAIN]
 
     whitelist_entities = conf.get(CONF_WHITELIST_ENTITIES)
     whitelist_domains = conf.get(CONF_WHITELIST_DOMAINS)
