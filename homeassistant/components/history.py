@@ -4,26 +4,40 @@ Provide pre-made queries on top of the recorder component.
 For more details about this component, please refer to the documentation at
 https://home-assistant.io/components/history/
 """
+import logging
 from collections import defaultdict
 from datetime import timedelta
 from itertools import groupby
-import logging
 
 import voluptuous as vol
 
+import homeassistant.helpers.config_validation as cv
 import homeassistant.util.dt as dt_util
 from homeassistant.components import recorder, script
 from homeassistant.components.frontend import register_built_in_panel
 from homeassistant.components.http import HomeAssistantView
-import homeassistant.helpers.config_validation as cv
 
 DOMAIN = 'history'
 DEPENDENCIES = ['recorder', 'http']
 
+_LOGGER = logging.getLogger(__name__)
+
 SIGNIFICANT_DOMAINS = ('thermostat',)
 IGNORE_DOMAINS = ('zone', 'scene',)
 
-_LOGGER = logging.getLogger(__name__)
+CONF_WHITELIST = 'whitelist'
+CONF_WHITELIST_ENTITIES = 'whitelist_entities'
+CONF_WHITELIST_DOMAINS = 'whitelist_domains'
+
+CONFIG_SCHEMA = vol.Schema({
+    DOMAIN: vol.Schema({
+        CONF_WHITELIST: vol.Schema({
+            vol.Optional(CONF_WHITELIST_ENTITIES, default=[]): cv.ensure_list,
+            vol.Optional(CONF_WHITELIST_DOMAINS, default=[]): cv.ensure_list
+        }),
+    }),
+}, extra=vol.ALLOW_EXTRA)
+
 
 def last_5_states(entity_id):
     """Return the last 5 states for entity_id."""
@@ -37,20 +51,46 @@ def last_5_states(entity_id):
         ).order_by(states.state_id.desc()).limit(5))
 
 
-def get_significant_states(start_time, end_time=None, entity_id=None):
+def get_significant_states(start_time, end_time=None, entity_id=None, config=None):
     """
     Return states changes during UTC period start_time - end_time.
 
     Significant states are all states where there is a state change,
     as well as all states from certain domains (for instance
     thermostat so that we get current temperature in our graphs).
+
+    If whitelist was specified, select only domains or entities specified.
     """
     states = recorder.get_model('States')
-    query = recorder.query('States').filter(
-        (states.domain.in_(SIGNIFICANT_DOMAINS) |
-         (states.last_changed == states.last_updated)) &
-        ((~states.domain.in_(IGNORE_DOMAINS)) &
-         (states.last_updated > start_time)))
+
+    whitelist = config[DOMAIN].get(CONF_WHITELIST, None)
+    if whitelist:
+        whitelist_entities = whitelist[CONF_WHITELIST_ENTITIES]
+        whitelist_domains = whitelist[CONF_WHITELIST_DOMAINS]
+        _LOGGER.debug("DEBUGG entities %s", whitelist_entities)
+        _LOGGER.debug("DEBUGG domains %s", whitelist_domains)
+        if (whitelist_entities and whitelist_domains):
+            _LOGGER.debug("DEBUGG process 2 %s", states)
+            query = recorder.query('States').filter(
+                (states.domain.in_(whitelist_domains) |
+                (states.entity_id.in_(whitelist_entities))))
+
+        elif whitelist_entities and not whitelist_domains:
+            _LOGGER.debug("DEBUGG process entities %s", states)
+            query = recorder.query('States').filter(
+                (states.entity_id.in_(whitelist_entities)))
+
+        else:
+            _LOGGER.debug("DEBUGG process domains %s", states)
+            query = recorder.query('States').filter(
+                (states.domain.in_(whitelist_domains)))
+
+    else:
+        query = recorder.query('States').filter(
+            (states.domain.in_(SIGNIFICANT_DOMAINS) |
+            (states.last_changed == states.last_updated)) &
+            ((~states.domain.in_(IGNORE_DOMAINS)) &
+            (states.last_updated > start_time)))
 
     if end_time is not None:
         query = query.filter(states.last_updated < end_time)
@@ -153,12 +193,9 @@ def get_state(utc_point_in_time, entity_id, run=None):
 # pylint: disable=unused-argument
 def setup(hass, config):
     """Setup the history hooks."""
-    hass.wsgi.register_view(Last5StatesView)
-    hass.wsgi.register_view(HistoryPeriodView)
+    hass.wsgi.register_view(Last5StatesView(hass, config))
+    hass.wsgi.register_view(HistoryPeriodView(hass, config))
     register_built_in_panel(hass, 'history', 'History', 'mdi:poll-box')
-
-    whitelist = config.get(CONF_WHITELIST, None)
-    _LOGGER.debug('MMMMM %s', whitelist)
 
     return True
 
@@ -168,6 +205,11 @@ class Last5StatesView(HomeAssistantView):
 
     url = '/api/history/entity/<entity:entity_id>/recent_states'
     name = 'api:history:entity-recent-states'
+
+    def __init__(self, hass, config):
+         """Initialize the Last5StatesView view."""
+         super().__init__(hass)
+         self.config = config
 
     def get(self, request, entity_id):
         """Retrieve last 5 states of entity."""
@@ -180,6 +222,11 @@ class HistoryPeriodView(HomeAssistantView):
     url = '/api/history/period'
     name = 'api:history:view-period'
     extra_urls = ['/api/history/period/<datetime:datetime>']
+
+    def __init__(self, hass, config):
+         """Initialize the HistoryPeriodView view."""
+         super().__init__(hass)
+         self.config = config
 
     def get(self, request, datetime=None):
         """Return history over a period of time."""
@@ -194,7 +241,7 @@ class HistoryPeriodView(HomeAssistantView):
         entity_id = request.args.get('filter_entity_id')
 
         return self.json(
-            get_significant_states(start_time, end_time, entity_id).values())
+            get_significant_states(start_time, end_time, entity_id, self.config).values())
 
 
 def _is_significant(state):
