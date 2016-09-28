@@ -67,7 +67,7 @@ def get_significant_states(start_time, end_time=None, entity_id=None,
     whitelist_domains = conf.get(CONF_WHITELIST_DOMAINS)
     _LOGGER.debug("Whitelisted entities: %s", whitelist_entities)
     _LOGGER.debug("Whitelisted domains: %s", whitelist_domains)
-    if (whitelist_entities and whitelist_domains):
+    if whitelist_entities and whitelist_domains:
         query = recorder.query('States').filter(
             (states.domain.in_(whitelist_domains)) |
             (states.entity_id.in_(whitelist_entities)))
@@ -83,9 +83,9 @@ def get_significant_states(start_time, end_time=None, entity_id=None,
     else:
         query = recorder.query('States').filter(
             (states.domain.in_(SIGNIFICANT_DOMAINS) |
-                (states.last_changed == states.last_updated)) &
+             (states.last_changed == states.last_updated)) &
             ((~states.domain.in_(IGNORE_DOMAINS)) &
-                (states.last_updated > start_time)))
+             (states.last_updated > start_time)))
 
     if end_time is not None:
         query = query.filter(states.last_updated < end_time)
