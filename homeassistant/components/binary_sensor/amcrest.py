@@ -11,11 +11,11 @@ import voluptuous as vol
 import homeassistant.loader as loader
 
 from homeassistant.components.binary_sensor import (
-        BinarySensorDevice, PLATFORM_SCHEMA)
+    BinarySensorDevice, PLATFORM_SCHEMA)
 from homeassistant.const import (
     CONF_HOST, CONF_MONITORED_CONDITIONS,
     CONF_USERNAME, CONF_PASSWORD, CONF_PORT,
-    STATE_ON, STATE_OFF)
+    STATE_UNKNOWN)
 from homeassistant.helpers import config_validation as cv
 
 REQUIREMENTS = ['amcrest==1.0.0']
@@ -27,8 +27,8 @@ DEFAULT_PORT = 80
 SCAN_INTERVAL = 30
 
 SENSOR_TYPES = {
-    'motion_detection': ['Motion', 'motion'],
-    'recording': ['Recording', None],
+    'motion_detector': ['Motion Detector', 'motion'],
+    'recording_on_motion': ['Recording on Motion', None],
 }
 
 NOTIFICATION_ID = 'amcrest_notification'
@@ -84,8 +84,8 @@ class AmcrestSensor(BinarySensorDevice):
         self._data = data
         self._name = SENSOR_TYPES.get(sensor_type)[0]
         self._sensor_type = sensor_type
-        self._state = STATE_ON
         self._sensor_class = SENSOR_TYPES.get(sensor_type)[1]
+        self._state = STATE_UNKNOWN
         self.update()
 
     @property
@@ -105,8 +105,8 @@ class AmcrestSensor(BinarySensorDevice):
 
     def update(self):
         """Get the latest data and updates the state."""
-        ## just to test
-        if self._state:
-            self._state = False
-        else:
-            self._state = True
+        if self._sensor_type == 'motion_detector':
+            self._state = self._data.camera.is_motion_detector_on()
+
+        elif self._sensor_type == 'recording_on_motion':
+            self._state = self._data.camera.is_record_on_motion_detection()
