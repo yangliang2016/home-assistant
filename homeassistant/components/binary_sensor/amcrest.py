@@ -2,39 +2,37 @@
 This component provides basic support for Amcrest IP cameras.
 
 For more details about this platform, please refer to the documentation at
-https://home-assistant.io/components/sensor.amcrest/
+https://home-assistant.io/components/binary_sensor.amcrest/
 """
-from datetime import timedelta
 import logging
 
 import voluptuous as vol
-import homeassistant.helpers.config_validation as cv
 
-from homeassistant.components.sensor import PLATFORM_SCHEMA
+import homeassistant.loader as loader
+
+from homeassistant.components.binary_sensor import (
+    BinarySensorDevice, PLATFORM_SCHEMA)
 from homeassistant.const import (
     CONF_HOST, CONF_MONITORED_CONDITIONS,
     CONF_USERNAME, CONF_PASSWORD, CONF_PORT,
     STATE_UNKNOWN)
-from homeassistant.helpers.entity import Entity
-from homeassistant.util import Throttle
-import homeassistant.loader as loader
+from homeassistant.helpers import config_validation as cv
 
 REQUIREMENTS = ['amcrest==1.0.0']
 
 _LOGGER = logging.getLogger(__name__)
 
-MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
-
-NOTIFICATION_ID = 'amcrest_notification'
-NOTIFICATION_TITLE = 'Amcrest Sensor Setup'
-
 DEFAULT_PORT = 80
 
-# Sensor types are defined like: Name, units
+SCAN_INTERVAL = 30
+
 SENSOR_TYPES = {
     'motion_detector': ['Motion Detector', 'motion'],
     'recording_on_motion': ['Recording on Motion', None],
 }
+
+NOTIFICATION_ID = 'amcrest_notification'
+NOTIFICATION_TITLE = 'Amcrest Binary Sensor Setup'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_HOST): cv.string,
@@ -47,7 +45,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
-    """Set up a sensor for an Amcrest IP Camera."""
+    """Set up a binary sensor for an Amcrest IP Camera."""
     from amcrest import AmcrestCamera
 
     data = AmcrestCamera(
@@ -77,15 +75,16 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     return True
 
 
-class AmcrestSensor(Entity):
-    """A sensor implementation for Amcrest IP camera."""
+class AmcrestSensor(BinarySensorDevice):
+    """An binary sensor implementation for Amcrest IP camera."""
 
     def __init__(self, data, sensor_type):
-        """Initialize a sensor for Amcrest camera."""
+        """Initialize an binary sensor for Amcrest camera."""
         super(AmcrestSensor, self).__init__()
         self._data = data
+        self._name = SENSOR_TYPES.get(sensor_type)[0]
         self._sensor_type = sensor_type
-        self._name = SENSOR_TYPES.get(self._sensor_type)[0]
+        self._sensor_class = SENSOR_TYPES.get(sensor_type)[1]
         self._state = STATE_UNKNOWN
         self.update()
 
@@ -95,25 +94,14 @@ class AmcrestSensor(Entity):
         return self._name
 
     @property
-    def state(self):
-        """Return the state of the sensor."""
+    def is_on(self):
+        """Return true if the binary sensor is on."""
         return self._state
 
     @property
-    def icon(self):
-        """Icon to use in the frontend, if any."""
-        return 'mdi:taxi'
-
-    @property
-    def entity_picture(self):
-        """Icon to use in the frontend, if any."""
-        return 'http://www.iconsdb.com/icons/preview/guacamole-green/ok-xxl.png'
-
-    @property
-    def unit_of_measurement(self):
-        """Return the units of measurement."""
-        return SENSOR_TYPES.get(self._sensor_type)[1]
-
+    def sensor_class(self):
+        """Return the class of the binary sensor."""
+        return self._sensor_class
 
     def update(self):
         """Get the latest data and updates the state."""
