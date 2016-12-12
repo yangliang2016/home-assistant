@@ -4,42 +4,36 @@ This component provides basic support for Amcrest IP cameras.
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/sensor.amcrest/
 """
+from datetime import timedelta
 import logging
-from datetime import import timedelta
 
 import voluptuous as vol
 
-import homeassistant.loader as loader
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import (
     CONF_HOST, CONF_MONITORED_CONDITIONS,
     CONF_USERNAME, CONF_PASSWORD, CONF_PORT,
-    STATE_UNKNOWN)
+    STATE_UNKNOWN, ATTR_ATTRIBUTION)
 from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
 import homeassistant.helpers.config_validation as cv
-
 
 REQUIREMENTS = ['amcrest==1.0.0']
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_PORT = 80
-
-#MONITORED_CONDITIONS = {
-#    'motion': ['Motion Detector', 'motion'],
-#    'recording': ['Recording on Motion', None],
-#}
-
-MONITORED_CONDITIONS = [
-    'motion',
-    'recording',
-]
-
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
 
 NOTIFICATION_ID = 'amcrest_notification'
 NOTIFICATION_TITLE = 'Amcrest Sensor Setup'
+
+DEFAULT_PORT = 80
+
+# Sensor types are defined like: Name, units
+SENSOR_TYPES = {
+    'motion_detector': ['Motion Detector', 'motion'],
+    'recording_on_motion': ['Recording on Motion', None],
+}
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_HOST): cv.string,
@@ -47,8 +41,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_PASSWORD): cv.string,
     vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
     vol.Required(CONF_MONITORED_CONDITIONS, default=[]):
-        #vol.All(cv.ensure_list, [vol.In(MONITORED_CONDITIONS)]),
-        vol.All(vol.In(MONITORED_CONDITIONS)),
+        vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
 })
 
 
@@ -90,9 +83,8 @@ class AmcrestSensor(Entity):
         """Initialize a sensor for Amcrest camera."""
         super(AmcrestSensor, self).__init__()
         self._data = data
-        self._name = MONITORED_CONDITIONS.get(sensor_type)[0]
+        self._name = SENSOR_TYPES.get(sensor_type)[0]
         self._sensor_type = sensor_type
-        self._sensor_class = MONITORED_CONDITIONS.get(sensor_type)[1]
         self._state = STATE_UNKNOWN
         self.update()
 
@@ -102,21 +94,11 @@ class AmcrestSensor(Entity):
         return self._name
 
     @property
-    def unit_of_measurement(self):
-        """Return the unit of measurement of this entity, if any."""
-        return self._sensor_class
+     def state(self):
+         """Return the state of the sensor."""
+         return self._state
 
-    @property
-    def state(self):
-        """Return the state of the sensor."""
-        return self._state
 
-    @property
-    def icon(self):
-        """Return the icon to use in the frontend, if any."""
-        return 'mdi:bike'
-
-    @Throttle(MIN_TIME_BETWEEN_UPDATES)
     def update(self):
         """Get the latest data and updates the state."""
         if self._sensor_type == 'motion_detector':
