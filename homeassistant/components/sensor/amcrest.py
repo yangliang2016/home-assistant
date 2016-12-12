@@ -2,20 +2,20 @@
 This component provides basic support for Amcrest IP cameras.
 
 For more details about this platform, please refer to the documentation at
-https://home-assistant.io/components/binary_sensor.amcrest/
+https://home-assistant.io/components/sensor.amcrest/
 """
 import logging
+from datetime import import timedelta
 
 import voluptuous as vol
 
 import homeassistant.loader as loader
-
-from homeassistant.components.binary_sensor import (
-    BinarySensorDevice, PLATFORM_SCHEMA)
+from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import (
     CONF_HOST, CONF_MONITORED_CONDITIONS,
     CONF_USERNAME, CONF_PASSWORD, CONF_PORT,
     STATE_UNKNOWN)
+from homeassistant.util import Throttle
 from homeassistant.helpers import config_validation as cv
 
 REQUIREMENTS = ['amcrest==1.0.0']
@@ -24,15 +24,15 @@ _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_PORT = 80
 
-SCAN_INTERVAL = 30
-
-SENSOR_TYPES = {
+MONITORED_CONDITIONS = {
     'motion_detector': ['Motion Detector', 'motion'],
     'recording_on_motion': ['Recording on Motion', None],
 }
 
+MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
+
 NOTIFICATION_ID = 'amcrest_notification'
-NOTIFICATION_TITLE = 'Amcrest Binary Sensor Setup'
+NOTIFICATION_TITLE = 'Amcrest Sensor Setup'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_HOST): cv.string,
@@ -40,12 +40,12 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_PASSWORD): cv.string,
     vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
     vol.Required(CONF_MONITORED_CONDITIONS, default=[]):
-        vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
+        vol.All(cv.ensure_list, [vol.In(MONITORED_CONDITIONS)]),
 })
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
-    """Set up a binary sensor for an Amcrest IP Camera."""
+    """Set up a sensor for an Amcrest IP Camera."""
     from amcrest import AmcrestCamera
 
     data = AmcrestCamera(
@@ -75,16 +75,16 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     return True
 
 
-class AmcrestSensor(BinarySensorDevice):
-    """An binary sensor implementation for Amcrest IP camera."""
+class AmcrestSensor(Entity):
+    """A sensor implementation for Amcrest IP camera."""
 
     def __init__(self, data, sensor_type):
-        """Initialize an binary sensor for Amcrest camera."""
+        """Initialize a sensor for Amcrest camera."""
         super(AmcrestSensor, self).__init__()
         self._data = data
-        self._name = SENSOR_TYPES.get(sensor_type)[0]
+        self._name = MONITORED_CONDITIONS.get(sensor_type)[0]
         self._sensor_type = sensor_type
-        self._sensor_class = SENSOR_TYPES.get(sensor_type)[1]
+        self._sensor_class = MONITORED_CONDITIONS.get(sensor_type)[1]
         self._state = STATE_UNKNOWN
         self.update()
 
@@ -94,15 +94,21 @@ class AmcrestSensor(BinarySensorDevice):
         return self._name
 
     @property
-    def is_on(self):
-        """Return true if the binary sensor is on."""
+    def unit_of_measurement(self):
+        """Return the unit of measurement of this entity, if any."""
+        return self._sensor_class
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
         return self._state
 
     @property
-    def sensor_class(self):
-        """Return the class of the binary sensor."""
-        return self._sensor_class
+    def icon(self):
+        """Return the icon to use in the frontend, if any."""
+        return 'mdi:bike'
 
+    @Throttle(MIN_TIME_BETWEEN_UPDATES)
     def update(self):
         """Get the latest data and updates the state."""
         if self._sensor_type == 'motion_detector':
