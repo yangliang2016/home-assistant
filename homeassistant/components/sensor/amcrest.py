@@ -15,8 +15,10 @@ from homeassistant.const import (
     CONF_HOST, CONF_MONITORED_CONDITIONS,
     CONF_USERNAME, CONF_PASSWORD, CONF_PORT,
     STATE_UNKNOWN)
+from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
-from homeassistant.helpers import config_validation as cv
+import homeassistant.helpers.config_validation as cv
+
 
 REQUIREMENTS = ['amcrest==1.0.0']
 
@@ -24,10 +26,15 @@ _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_PORT = 80
 
-MONITORED_CONDITIONS = {
-    'motion_detector': ['Motion Detector', 'motion'],
-    'recording_on_motion': ['Recording on Motion', None],
-}
+#MONITORED_CONDITIONS = {
+#    'motion': ['Motion Detector', 'motion'],
+#    'recording': ['Recording on Motion', None],
+#}
+
+MONITORED_CONDITIONS = [
+    'motion',
+    'recording',
+]
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
 
@@ -40,7 +47,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_PASSWORD): cv.string,
     vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
     vol.Required(CONF_MONITORED_CONDITIONS, default=[]):
-        vol.All(cv.ensure_list, [vol.In(MONITORED_CONDITIONS)]),
+        #vol.All(cv.ensure_list, [vol.In(MONITORED_CONDITIONS)]),
+        vol.All(vol.In(MONITORED_CONDITIONS)),
 })
 
 
