@@ -34,6 +34,8 @@ DEFAULT_PORT = 80
 SENSOR_TYPES = {
     'motion_detector': ['Motion Detector', 'motion'],
     'recording_on_motion': ['Recording on Motion', None],
+    'sdcard_used_bytes': ['SD card Used', 'GB'],
+    'sdcard_total_bytes': ['SD card Total', 'GB'],
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -87,6 +89,7 @@ class AmcrestSensor(Entity):
         self._sensor_type = sensor_type
         self._name = SENSOR_TYPES.get(self._sensor_type)[0]
         self._state = STATE_UNKNOWN
+        self._counter = 1
         self.update()
 
     @property
@@ -107,7 +110,7 @@ class AmcrestSensor(Entity):
     @property
     def entity_picture(self):
         """Icon to use in the frontend, if any."""
-        return 'http://www.iconsdb.com/icons/preview/guacamole-green/ok-xxl.png'
+        return
 
     @property
     def unit_of_measurement(self):
@@ -122,3 +125,10 @@ class AmcrestSensor(Entity):
 
         elif self._sensor_type == 'recording_on_motion':
             self._state = self._data.camera.is_record_on_motion_detection()
+
+        elif self._sensor_type == 'sdcard_used_bytes':
+            self._state = 16
+
+        elif self._sensor_type == 'sdcard_total_bytes':
+            self._counter += 1
+            self._state = 64 + self._counter
