@@ -32,7 +32,7 @@ DEFAULT_PORT = 80
 
 # Sensor types are defined like: Name, units
 SENSOR_TYPES = {
-    'motion_detector': ['Motion Detector', 'motion'],
+    'motion_detector': ['Motion Detector', None],
     'recording_on_motion': ['Recording on Motion', None],
     'sdcard_used_bytes': ['SD card Used', 'GB'],
     'sdcard_total_bytes': ['SD card Total', 'GB'],
@@ -127,8 +127,7 @@ class AmcrestSensor(Entity):
             self._state = self._data.camera.is_record_on_motion_detection()
 
         elif self._sensor_type == 'sdcard_used_bytes':
-            self._state = 16
+            self._state = round(self._data.camera.storage_used_bytes)
 
         elif self._sensor_type == 'sdcard_total_bytes':
-            self._counter += 1
-            self._state = 64 + self._counter
+            self._state = round(self._data.camera.storage_total_bytes)
