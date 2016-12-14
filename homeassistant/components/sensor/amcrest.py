@@ -30,12 +30,12 @@ NOTIFICATION_TITLE = 'Amcrest Sensor Setup'
 
 DEFAULT_PORT = 80
 
-# Sensor types are defined like: Name, units
+# Sensor types are defined like: Name, units, icon
 SENSOR_TYPES = {
-    'motion_detector': ['Motion Detector', None],
-    'recording_on_motion': ['Recording on Motion', None],
-    'sdcard_used_bytes': ['SD card Used', 'GB'],
-    'sdcard_total_bytes': ['SD card Total', 'GB'],
+    'motion_detector': ['Motion Detector', None, 'run'],
+    'recording_on_motion': ['Recording on Motion', None, 'run'],
+    'sdcard_used': ['SD card Used', 'GB', 'sd'],
+    'sdcard_total': ['SD card Total', 'GB', 'sd'],
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -87,9 +87,10 @@ class AmcrestSensor(Entity):
         super(AmcrestSensor, self).__init__()
         self._data = data
         self._sensor_type = sensor_type
-        self._name = SENSOR_TYPES.get(self._sensor_type)[0]
+        self._icon = 'mdi:' + SENSOR_TYPES.get(self._sensor_type)[2]
         self._state = STATE_UNKNOWN
-        self._counter = 1
+        serial = self._data.camera.serial_number
+        self._name = serial + '_ ' + SENSOR_TYPES.get(self._sensor_type)[0]
         self.update()
 
     @property
@@ -105,7 +106,7 @@ class AmcrestSensor(Entity):
     @property
     def icon(self):
         """Icon to use in the frontend, if any."""
-        return 'mdi:taxi'
+        return self._icon
 
     @property
     def entity_picture(self):
@@ -126,8 +127,8 @@ class AmcrestSensor(Entity):
         elif self._sensor_type == 'recording_on_motion':
             self._state = self._data.camera.is_record_on_motion_detection()
 
-        elif self._sensor_type == 'sdcard_used_bytes':
+        elif self._sensor_type == 'sdcard_used':
             self._state = round(self._data.camera.storage_used_bytes)
 
-        elif self._sensor_type == 'sdcard_total_bytes':
+        elif self._sensor_type == 'sdcard_total':
             self._state = round(self._data.camera.storage_total_bytes)
