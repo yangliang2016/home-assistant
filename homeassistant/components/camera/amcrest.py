@@ -13,7 +13,8 @@ import voluptuous as vol
 import homeassistant.loader as loader
 from homeassistant.components.camera import (Camera, PLATFORM_SCHEMA)
 from homeassistant.const import (
-    CONF_HOST, CONF_NAME, CONF_USERNAME, CONF_PASSWORD, CONF_PORT)
+    CONF_ENTITY_NAMESPACE, CONF_HOST, CONF_NAME, CONF_USERNAME,
+    CONF_PASSWORD, CONF_PORT)
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import (
     async_get_clientsession, async_aiohttp_proxy_stream)
@@ -25,7 +26,7 @@ _LOGGER = logging.getLogger(__name__)
 CONF_RESOLUTION = 'resolution'
 CONF_STREAM_SOURCE = 'stream_source'
 
-DEFAULT_NAME = 'Amcrest Camera'
+CONF_ENTITY_NAMESPACE = 'amcrest'
 DEFAULT_PORT = 80
 DEFAULT_RESOLUTION = 'high'
 DEFAULT_STREAM_SOURCE = 'mjpeg'
@@ -52,7 +53,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_PASSWORD): cv.string,
     vol.Optional(CONF_RESOLUTION, default=DEFAULT_RESOLUTION):
         vol.All(vol.In(RESOLUTION_LIST)),
-    vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+    vol.Optional(CONF_NAME): cv.string,
     vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
     vol.Optional(CONF_STREAM_SOURCE, default=DEFAULT_STREAM_SOURCE):
         vol.All(vol.In(STREAM_SOURCE_LIST)),
