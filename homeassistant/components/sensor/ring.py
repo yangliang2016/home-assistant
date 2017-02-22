@@ -36,21 +36,14 @@ CONF_ATTRIBUTION = "Data provided by Ring.com"
 SENSOR_TYPES = {
     'battery': ['Battery', ['doorbell'], '%', 'battery-50'],
     'last_activity': ['Last Activity', ['doorbell'], None, 'history'],
-<<<<<<< HEAD
-=======
-    'motion': ['Motion Sensor', ['doorbell'], None, 'run'],
->>>>>>> d0a336ad97f86887e978ca0d3bbfd2d4873d276a
     'volume': ['Volume', ['chime', 'doorbell'], None, 'bell-ring'],
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_USERNAME): cv.string,
     vol.Required(CONF_PASSWORD): cv.string,
-<<<<<<< HEAD
-=======
     vol.Optional(CONF_ENTITY_NAMESPACE, default=DEFAULT_ENTITY_NAMESPACE):
         cv.string,
->>>>>>> d0a336ad97f86887e978ca0d3bbfd2d4873d276a
     vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL):
         vol.All(vol.Coerce(int), vol.Range(min=1)),
     vol.Required(CONF_MONITORED_CONDITIONS, default=[]):
@@ -96,10 +89,6 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
                                           sensor_type))
 
     add_devices(sensors, True)
-<<<<<<< HEAD
-=======
-
->>>>>>> d0a336ad97f86887e978ca0d3bbfd2d4873d276a
     return True
 
 
@@ -190,12 +179,5 @@ class RingSensor(Entity):
                     self._state = '{0:0>2}:{1:0>2}'.format(created_at.hour,
                                                            created_at.minute)
 
-<<<<<<< HEAD
-=======
-                if self._sensor_type == 'motion':
-                    self._data = self._ring.check_activity
-                    self._state = bool(self._data)
-
->>>>>>> d0a336ad97f86887e978ca0d3bbfd2d4873d276a
                 if self._sensor_type == 'volume':
                     self._state = self._data['settings']['doorbell_volume']
