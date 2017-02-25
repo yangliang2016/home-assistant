@@ -28,7 +28,7 @@ NOTIFICATION_ID = 'ring_notification'
 NOTIFICATION_TITLE = 'Ring Sensor Setup'
 
 DEFAULT_ENTITY_NAMESPACE = 'ring'
-DEFAULT_SCAN_INTERVAL = timedelta(seconds=10)
+DEFAULT_SCAN_INTERVAL = timedelta(seconds=30)
 
 CONF_ATTRIBUTION = "Data provided by Ring.com"
 
