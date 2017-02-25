@@ -20,7 +20,7 @@ import homeassistant.loader as loader
 
 from requests.exceptions import HTTPError, ConnectTimeout
 
-REQUIREMENTS = ['ring_doorbell==0.0.4']
+REQUIREMENTS = ['ring_doorbell==0.1.0']
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -72,20 +72,16 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 
     sensors = []
     for sensor_type in config.get(CONF_MONITORED_CONDITIONS):
-        for dev in ring.chimes:
+        for device in ring.chimes:
             if 'chime' in SENSOR_TYPES[sensor_type][1]:
                 sensors.append(RingSensor(hass,
-                                          dev,
-                                          'chime',
-                                          ring,
+                                          device,
                                           sensor_type))
 
-        for dev in ring.doorbells:
+        for device in ring.doorbells:
             if 'doorbell' in SENSOR_TYPES[sensor_type][1]:
                 sensors.append(RingSensor(hass,
-                                          dev,
-                                          'doorbell',
-                                          ring,
+                                          device,
                                           sensor_type))
 
     add_devices(sensors, True)
@@ -95,19 +91,17 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class RingSensor(Entity):
     """A sensor implementation for Ring device."""
 
-    def __init__(self, hass, name, family, ring, sensor_type):
+    def __init__(self, hass, data, sensor_type):
         """Initialize a sensor for Ring device."""
         super(RingSensor, self).__init__()
-        self._ring = ring
         self._sensor_type = sensor_type
-        self._family = family
-        self._name = "{0} {1}".format(name,
-                                      SENSOR_TYPES.get(self._sensor_type)[0])
-        self._altname = name
+        self._data = data
+        self._extra = None
         self._icon = 'mdi:{}'.format(SENSOR_TYPES.get(self._sensor_type)[3])
+        self._name = "{0} {1}".format(self._data.name,
+                                      SENSOR_TYPES.get(self._sensor_type)[0])
         self._state = STATE_UNKNOWN
         self._tz = str(hass.config.time_zone)
-        self._data = None
 
     @property
     def name(self):
@@ -125,19 +119,17 @@ class RingSensor(Entity):
         attrs = {}
 
         attrs[ATTR_ATTRIBUTION] = CONF_ATTRIBUTION
-        attrs['type'] = self._family
+        attrs['device_id'] = self._data.id
+        attrs['firmware'] = self._data.firmware
+        attrs['kind'] = self._data.kind
+        attrs['timezone'] = self._data.timezone
+        attrs['type'] = self._data.family
 
-        if self._data:
-
-            if self._sensor_type == 'last_activity':
-                attrs['created_at'] = self._data['created_at']
-                attrs['answered'] = self._data['answered']
-                attrs['recording_status'] = self._data['recording']['status']
-                attrs['kind'] = self._data['kind']
-            else:
-                attrs['firmware'] = self._data['firmware_version']
-                attrs['device_id'] = self._data['device_id']
-                attrs['timezone'] = self._data['time_zone']
+        if self._extra and self._sensor_type == 'last_activity':
+            attrs['created_at'] = self._extra['created_at']
+            attrs['answered'] = self._extra['answered']
+            attrs['recording_status'] = self._extra['recording']['status']
+            attrs['category'] = self._extra['kind']
 
         return attrs
 
@@ -149,35 +141,24 @@ class RingSensor(Entity):
     @property
     def unit_of_measurement(self):
         """Return the units of measurement."""
-        if self._data and self._sensor_type == 'last_activity':
-            return self._data['kind']
+        if self._extra and self._sensor_type == 'last_activity':
+            return self._extra['kind']
         else:
             return SENSOR_TYPES.get(self._sensor_type)[2]
 
     def update(self):
         """Get the latest data and updates the state."""
-        if self._family == 'chime':
-            self._data = self._ring.chime_attributes(self._altname)
+        self._data.update()
 
-            if self._data and self._sensor_type == 'volume':
-                self._state = self._data['settings']['volume']
+        if self._sensor_type == 'volume':
+            self._state = self._data.volume
 
-        if self._family == 'doorbell':
-            self._data = self._ring.doorbell_attributes(self._altname)
+        if self._sensor_type == 'battery':
+            self._state = self._data.battery_life
 
-            if self._data:
-                if self._sensor_type == 'battery':
-                    self._state = \
-                        self._ring.doorbell_battery_life(self._altname)
-
-                if self._sensor_type == 'last_activity':
-                    self._data = self._ring.history(self._altname,
-                                                    limit=1,
-                                                    timezone=self._tz)[0]
-
-                    created_at = self._data['created_at']
-                    self._state = '{0:0>2}:{1:0>2}'.format(created_at.hour,
-                                                           created_at.minute)
-
-                if self._sensor_type == 'volume':
-                    self._state = self._data['settings']['doorbell_volume']
+        if self._sensor_type == 'last_activity':
+            self._state = 'ok'
+            self._extra = self._data.history(limit=1, timezone=self._tz)[0]
+            created_at = self._extra['created_at']
+            self._state = '{0:0>2}:{1:0>2}'.format(created_at.hour,
+                                                   created_at.minute)
