@@ -157,7 +157,6 @@ class RingSensor(Entity):
             self._state = self._data.battery_life
 
         if self._sensor_type == 'last_activity':
-            self._state = 'ok'
             self._extra = self._data.history(limit=1, timezone=self._tz)[0]
             created_at = self._extra['created_at']
             self._state = '{0:0>2}:{1:0>2}'.format(created_at.hour,
