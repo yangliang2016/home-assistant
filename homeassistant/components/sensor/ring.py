@@ -141,10 +141,7 @@ class RingSensor(Entity):
     @property
     def unit_of_measurement(self):
         """Return the units of measurement."""
-        if self._extra and self._sensor_type == 'last_activity':
-            return self._extra['kind']
-        else:
-            return SENSOR_TYPES.get(self._sensor_type)[2]
+        return SENSOR_TYPES.get(self._sensor_type)[2]
 
     def update(self):
         """Get the latest data and updates the state."""
