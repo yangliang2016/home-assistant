@@ -22,7 +22,7 @@ from homeassistant.util import Throttle
 
 from requests.exceptions import HTTPError, ConnectTimeout
 
-REQUIREMENTS = ['ring_doorbell==0.0.4']
+REQUIREMENTS = ['ring_doorbell==0.1.0']
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -67,12 +67,11 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 
     sensors = []
     for sensor_type in config.get(CONF_MONITORED_CONDITIONS):
-        for dev in ring.doorbells:
+        for device in ring.doorbells:
             if 'doorbell' in SENSOR_TYPES[sensor_type][1]:
-                sensors.append(RingBinarySensor(dev,
-                                          'doorbell',
-                                          ring,
-                                          sensor_type))
+                sensors.append(RingBinarySensor(hass,
+                                                device,
+                                                sensor_type))
     add_devices(sensors, True)
     return True
 
@@ -80,17 +79,14 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class RingBinarySensor(BinarySensorDevice):
     """A binary sensor implementation for Ring device."""
 
-    def __init__(self, name, family, ring, sensor_type):
+    def __init__(self, hass, data, sensor_type):
         """Initialize a sensor for Ring device."""
         super(RingBinarySensor, self).__init__()
-        self._ring = ring
         self._sensor_type = sensor_type
-        self._family = family
-        self._name = "{0} {1}".format(name,
+        self._data = data
+        self._name = "{0} {1}".format(self._data.name,
                                       SENSOR_TYPES.get(self._sensor_type)[0])
         self._device_class = SENSOR_TYPES.get(self._sensor_type)[2]
-        self._altname = name
-        self._data = None
         self._state = None
 
     @property
@@ -106,29 +102,26 @@ class RingBinarySensor(BinarySensorDevice):
     @property
     def device_class(self):
         """Return the class of the binary sensor."""
-        return STATE_ON if self._ring.check_activity else STATE_OFF
+        return STATE_ON if self._data.check_activity else STATE_OFF
 
     @property
     def device_state_attributes(self):
         """Return the state attributes."""
         attrs = {}
-
         attrs[ATTR_ATTRIBUTION] = CONF_ATTRIBUTION
-        attrs['type'] = self._family
 
-        if self._data:
-            attrs['firmware'] = self._data['firmware_version']
-            attrs['device_id'] = self._data['device_id']
-            attrs['timezone'] = self._data['time_zone']
+        attrs['device_id'] = self._data.id
+        attrs['firmware'] = self._data.firmware
+        attrs['kind'] = self._data.kind
+        attrs['timezone'] = self._data.timezone
+        attrs['type'] = self._data.family
 
         return attrs
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     def update(self):
         """Get the latest data and updates the state."""
-        if self._family == 'doorbell':
-            self._data = self._ring.doorbell_attributes(self._altname)
+        self._data.update()
 
-            if self._data and self._sensor_type == 'motion':
-                self._state = bool(self._ring.check_activity)
-        _LOGGER.debug("3 debuggg %s", self)
+        if self._sensor_type == 'motion':
+            self._state = bool(self._data.check_activity)
