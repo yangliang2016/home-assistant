@@ -33,6 +33,7 @@ DEFAULT_ENTITY_NAMESPACE = 'ring'
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=3)
 
 CONF_ATTRIBUTION = "Data provided by Ring.com"
+CONF_NOTIFICATION_URL = 'notification_url'
 
 # Sensor types: Name, category, device_class
 SENSOR_TYPES = {
@@ -44,13 +45,20 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_PASSWORD): cv.string,
     vol.Required(CONF_MONITORED_CONDITIONS, default=[]):
         vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
+    vol.Optional(CONF_NOTIFICATION_URL): cv.url,
 })
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up a sensor for a Ring device."""
     from ring_doorbell import Ring
-    ring = Ring(config.get(CONF_USERNAME), config.get(CONF_PASSWORD))
+    if config.get(CONF_NOTIFICATION_URL):
+        ring = Ring(username = config.get(CONF_USERNAME),
+                    password = config.get(CONF_PASSWORD),
+                    push_token_notify_url = config.get(CONF_NOTIFICATION_URL),
+                    persist_token = True)
+    else:
+        ring = Ring(config.get(CONF_USERNAME), config.get(CONF_PASSWORD))
 
     persistent_notification = loader.get_component('persistent_notification')
     try:
@@ -102,7 +110,7 @@ class RingBinarySensor(BinarySensorDevice):
     @property
     def device_class(self):
         """Return the class of the binary sensor."""
-        return STATE_ON if self._data.check_activity else STATE_OFF
+        return STATE_ON if self._data.check_alerts else STATE_OFF
 
     @property
     def device_state_attributes(self):
@@ -124,4 +132,7 @@ class RingBinarySensor(BinarySensorDevice):
         self._data.update()
 
         if self._sensor_type == 'motion':
-            self._state = bool(self._data.check_activity)
+            self._state = bool(self._data.check_alerts)
+
+        if self._data.alert:
+            _LOGGER.debug("CONTENTS ALERT -> %s", self._data.alerts)
