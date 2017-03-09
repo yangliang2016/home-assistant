@@ -30,7 +30,7 @@ NOTIFICATION_ID = 'ring_notification'
 NOTIFICATION_TITLE = 'Ring Binary Sensor Setup'
 
 DEFAULT_ENTITY_NAMESPACE = 'ring'
-MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=3)
+SCAN_INTERVAL = timedelta(seconds=5)
 
 CONF_ATTRIBUTION = "Data provided by Ring.com"
 CONF_NOTIFICATION_URL = 'notification_url'
@@ -110,7 +110,7 @@ class RingBinarySensor(BinarySensorDevice):
     @property
     def device_class(self):
         """Return the class of the binary sensor."""
-        return STATE_ON if self._data.check_alerts else STATE_OFF
+        return self._device_class
 
     @property
     def device_state_attributes(self):
@@ -126,13 +126,15 @@ class RingBinarySensor(BinarySensorDevice):
 
         return attrs
 
-    @Throttle(MIN_TIME_BETWEEN_UPDATES)
     def update(self):
         """Get the latest data and updates the state."""
+        _LOGGER.debug("Running mmello ->")
         self._data.update()
+        self._data.check_alerts
 
         if self._sensor_type == 'motion':
-            self._state = bool(self._data.check_alerts)
+            self._state = bool(self._data.alert)
 
         if self._data.alert:
-            _LOGGER.debug("CONTENTS ALERT -> %s", self._data.alerts)
+            _LOGGER.debug("CONTENTS ALERT -> %s", self._data.alert)
+            _LOGGER.debug("CONTENTS ALERT EXP -> %s", self._data.alert_expires_at)
