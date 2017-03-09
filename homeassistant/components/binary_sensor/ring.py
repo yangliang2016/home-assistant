@@ -19,7 +19,7 @@ from homeassistant.const import (
 
 from requests.exceptions import HTTPError, ConnectTimeout
 
-REQUIREMENTS = ['ring_doorbell==0.1.0']
+REQUIREMENTS = ['ring_doorbell==0.1.1']
 
 _LOGGER = logging.getLogger(__name__)
 
