@@ -15,10 +15,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorDevice, PLATFORM_SCHEMA)
 from homeassistant.const import (
     CONF_ENTITY_NAMESPACE, CONF_MONITORED_CONDITIONS,
-    CONF_USERNAME, CONF_PASSWORD, ATTR_ATTRIBUTION,
-    STATE_ON, STATE_OFF)
-from homeassistant.helpers.entity import Entity
-from homeassistant.util import Throttle
+    CONF_USERNAME, CONF_PASSWORD, ATTR_ATTRIBUTION)
 
 from requests.exceptions import HTTPError, ConnectTimeout
 
@@ -37,12 +34,15 @@ CONF_NOTIFICATION_URL = 'notification_url'
 
 # Sensor types: Name, category, device_class
 SENSOR_TYPES = {
-    'motion': ['Motion Sensor', ['doorbell'], 'motion'],
+    'ding': ['Ding', ['doorbell'], 'occupancy'],
+    'motion': ['Motion', ['doorbell'], 'motion'],
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_USERNAME): cv.string,
     vol.Required(CONF_PASSWORD): cv.string,
+    vol.Optional(CONF_ENTITY_NAMESPACE, default=DEFAULT_ENTITY_NAMESPACE):
+        cv.string,
     vol.Required(CONF_MONITORED_CONDITIONS, default=[]):
         vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
     vol.Optional(CONF_NOTIFICATION_URL): cv.url,
@@ -53,10 +53,10 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up a sensor for a Ring device."""
     from ring_doorbell import Ring
     if config.get(CONF_NOTIFICATION_URL):
-        ring = Ring(username = config.get(CONF_USERNAME),
-                    password = config.get(CONF_PASSWORD),
-                    push_token_notify_url = config.get(CONF_NOTIFICATION_URL),
-                    persist_token = True)
+        ring = Ring(username=config.get(CONF_USERNAME),
+                    password=config.get(CONF_PASSWORD),
+                    push_token_notify_url=config.get(CONF_NOTIFICATION_URL),
+                    persist_token=True)
     else:
         ring = Ring(config.get(CONF_USERNAME), config.get(CONF_PASSWORD))
 
@@ -120,21 +120,26 @@ class RingBinarySensor(BinarySensorDevice):
 
         attrs['device_id'] = self._data.id
         attrs['firmware'] = self._data.firmware
-        attrs['kind'] = self._data.kind
         attrs['timezone'] = self._data.timezone
-        attrs['type'] = self._data.family
+
+        if self._data.alert and self._data.alert_expires_at:
+            attrs['expires_at'] = self._data.alert_expires_at
+            attrs['state'] = self._data.alert.get('state')
 
         return attrs
 
     def update(self):
         """Get the latest data and updates the state."""
-        _LOGGER.debug("Running mmello ->")
-        self._data.update()
-        self._data.check_alerts
+        _LOGGER.debug("Running RING -> %s", self._sensor_type)
+        self._data.check_alerts()
 
-        if self._sensor_type == 'motion':
-            self._state = bool(self._data.alert)
+        if self._data.alert:
+            self._state = bool(self._sensor_type ==
+                               self._data.alert.get('motion'))
+        else:
+            self._state = False
 
         if self._data.alert:
             _LOGGER.debug("CONTENTS ALERT -> %s", self._data.alert)
-            _LOGGER.debug("CONTENTS ALERT EXP -> %s", self._data.alert_expires_at)
+            _LOGGER.debug("CONTENTS ALERT EXP -> %s",
+                          self._data.alert_expires_at)
