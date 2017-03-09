@@ -135,7 +135,7 @@ class RingBinarySensor(BinarySensorDevice):
 
         if self._data.alert:
             self._state = bool(self._sensor_type ==
-                               self._data.alert.get('motion'))
+                               self._data.alert.get('kind'))
         else:
             self._state = False
 
