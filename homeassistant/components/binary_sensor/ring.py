@@ -140,6 +140,7 @@ class RingBinarySensor(BinarySensorDevice):
             self._state = False
 
         if self._data.alert:
-            _LOGGER.debug("CONTENTS ALERT -> %s", self._data.alert)
+            _LOGGER.debug("CONTENTS ALERT -> %s -> %s",
+                          self._sensor_type, self._data.alert)
             _LOGGER.debug("CONTENTS ALERT EXP -> %s",
                           self._data.alert_expires_at)
