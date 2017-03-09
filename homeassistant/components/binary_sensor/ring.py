@@ -26,11 +26,11 @@ _LOGGER = logging.getLogger(__name__)
 NOTIFICATION_ID = 'ring_notification'
 NOTIFICATION_TITLE = 'Ring Binary Sensor Setup'
 
+DEFAULT_CACHEDB = 'ring_cache.pickle'
 DEFAULT_ENTITY_NAMESPACE = 'ring'
 SCAN_INTERVAL = timedelta(seconds=5)
 
 CONF_ATTRIBUTION = "Data provided by Ring.com"
-CONF_NOTIFICATION_URL = 'notification_url'
 
 # Sensor types: Name, category, device_class
 SENSOR_TYPES = {
@@ -45,20 +45,15 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
         cv.string,
     vol.Required(CONF_MONITORED_CONDITIONS, default=[]):
         vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
-    vol.Optional(CONF_NOTIFICATION_URL): cv.url,
 })
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up a sensor for a Ring device."""
     from ring_doorbell import Ring
-    if config.get(CONF_NOTIFICATION_URL):
-        ring = Ring(username=config.get(CONF_USERNAME),
-                    password=config.get(CONF_PASSWORD),
-                    push_token_notify_url=config.get(CONF_NOTIFICATION_URL),
-                    persist_token=True)
-    else:
-        ring = Ring(config.get(CONF_USERNAME), config.get(CONF_PASSWORD))
+    ring = Ring(username=config.get(CONF_USERNAME),
+                password=config.get(CONF_PASSWORD),
+                persist_token=True)
 
     persistent_notification = loader.get_component('persistent_notification')
     try:
@@ -90,6 +85,7 @@ class RingBinarySensor(BinarySensorDevice):
     def __init__(self, hass, data, sensor_type):
         """Initialize a sensor for Ring device."""
         super(RingBinarySensor, self).__init__()
+        self._cache = hass.config.path(DEFAULT_CACHEDB)
         self._sensor_type = sensor_type
         self._data = data
         self._name = "{0} {1}".format(self._data.name,
@@ -130,17 +126,10 @@ class RingBinarySensor(BinarySensorDevice):
 
     def update(self):
         """Get the latest data and updates the state."""
-        _LOGGER.debug("Running RING -> %s", self._sensor_type)
-        self._data.check_alerts()
+        self._data.check_alerts(cache=self._cache)
 
         if self._data.alert:
             self._state = bool(self._sensor_type ==
                                self._data.alert.get('kind'))
         else:
             self._state = False
-
-        if self._data.alert:
-            _LOGGER.debug("CONTENTS ALERT -> %s -> %s",
-                          self._sensor_type, self._data.alert)
-            _LOGGER.debug("CONTENTS ALERT EXP -> %s",
-                          self._data.alert_expires_at)
