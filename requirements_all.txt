@@ -477,6 +477,9 @@ pyRFXtrx==0.17.0
 # homeassistant.components.alarm_control_panel.alarmdotcom
 pyalarmdotcom==0.2.9
 
+# homeassistant.components.camera.arlo
+pyarlo==0.0.1
+
 # homeassistant.components.notify.xmpp
 pyasn1-modules==0.0.8
 
