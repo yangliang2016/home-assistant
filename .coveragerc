@@ -182,6 +182,7 @@ omit =
     homeassistant/components/alarm_control_panel/simplisafe.py
     homeassistant/components/alarm_control_panel/totalconnect.py
     homeassistant/components/apiai.py
+    homeassistant/components/arlo.py
     homeassistant/components/binary_sensor/arest.py
     homeassistant/components/binary_sensor/concord232.py
     homeassistant/components/binary_sensor/flic.py
@@ -193,6 +194,7 @@ omit =
     homeassistant/components/binary_sensor/rest.py
     homeassistant/components/browser.py
     homeassistant/components/camera/amcrest.py
+    homeassistant/components/camera/arlo.py
     homeassistant/components/camera/bloomsky.py
     homeassistant/components/camera/ffmpeg.py
     homeassistant/components/camera/foscam.py
@@ -361,6 +363,7 @@ omit =
     homeassistant/components/scene/lifx_cloud.py
     homeassistant/components/sensor/amcrest.py
     homeassistant/components/sensor/arest.py
+    homeassistant/components/sensor/arlo.py
     homeassistant/components/sensor/arwn.py
     homeassistant/components/sensor/bbox.py
     homeassistant/components/sensor/bitcoin.py
