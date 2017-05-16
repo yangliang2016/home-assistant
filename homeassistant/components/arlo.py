@@ -13,7 +13,7 @@ import homeassistant.loader as loader
 
 from requests.exceptions import HTTPError, ConnectTimeout
 
-REQUIREMENTS = ['pyarlo==0.0.3']
+REQUIREMENTS = ['pyarlo==0.0.4']
 
 _LOGGER = logging.getLogger(__name__)
 
