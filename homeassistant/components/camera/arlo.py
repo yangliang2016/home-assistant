@@ -4,26 +4,16 @@ This component provides basic support for Netgear Arlo IP cameras.
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/camera.arlo/
 """
-import asyncio
 import logging
-import voluptuous as vol
-import async_timeout
-
 from datetime import timedelta
+import voluptuous as vol
 
 from homeassistant.helpers import config_validation as cv
-
 from homeassistant.components.arlo import (
-    CONF_ATTRIBUTION, DEFAULT_BRAND, DEFAULT_ENTITY_NAMESPACE)
+    DEFAULT_BRAND, DEFAULT_ENTITY_NAMESPACE)
 
 from homeassistant.components.camera import (Camera, PLATFORM_SCHEMA)
-from homeassistant.const import (
-    CONF_ENTITY_NAMESPACE, CONF_USERNAME, CONF_PASSWORD)
-
-from homeassistant.helpers.aiohttp_client import (
-    async_get_clientsession, async_aiohttp_proxy_web,  async_aiohttp_proxy_stream)
-
-from homeassistant.util import Throttle
+from homeassistant.const import CONF_ENTITY_NAMESPACE
 
 DEPENDENCIES = ['arlo']
 

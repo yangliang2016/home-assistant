@@ -4,8 +4,8 @@ This component provides HA sensor for Netgear Arlo IP cameras.
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/sensor.arlo/
 """
-from datetime import timedelta
 import logging
+from datetime import timedelta
 import voluptuous as vol
 
 from homeassistant.helpers import config_validation as cv
@@ -13,7 +13,8 @@ from homeassistant.components.arlo import (
     CONF_ATTRIBUTION, DEFAULT_BRAND, DEFAULT_ENTITY_NAMESPACE)
 
 from homeassistant.const import (
-    CONF_ENTITY_NAMESPACE, CONF_MONITORED_CONDITIONS)
+    ATTR_ATTRIBUTION, CONF_ENTITY_NAMESPACE, CONF_MONITORED_CONDITIONS,
+    STATE_UNKNOWN)
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.helpers.entity import Entity
 
@@ -23,10 +24,10 @@ _LOGGER = logging.getLogger(__name__)
 
 # sensor_type [ description, unit, icon ]
 SENSOR_TYPES = {
-    'total_cameras': ['Arlo Cameras', None, 'camera'],
-    'recorded_today': ['Recorded Today', None, 'file-video'],
+    'last_capture': ['Last', None, 'run-fast'],
+    'total_cameras': ['Arlo Cameras', None, 'video'],
+    'captured_today': ['Captured Today', None, 'file-video'],
 }
-
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_ENTITY_NAMESPACE, default=DEFAULT_ENTITY_NAMESPACE):
@@ -35,23 +36,25 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
         vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
 })
 
-SCAN_INTERVAL = timedelta(seconds=30)
+SCAN_INTERVAL = timedelta(seconds=90)
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up an Arlo IP sensor."""
     arlo = hass.data.get('arlo')
 
-    #import rpdb; rpdb.set_trace()
     sensors = []
     for sensor_type in config.get(CONF_MONITORED_CONDITIONS):
-        if sensor_type == 'recorded_today':
-            cameras = arlo.cameras
-            for cam in cameras:
-                name = '{0}_{1}'.format(SENSOR_TYPES[sensor_type][0], cam.name)
-                sensors.append(ArloSensor(hass, name, cam, sensor_type))
+        if sensor_type == 'total_cameras':
+            sensors.append(ArloSensor(hass,
+                                      SENSOR_TYPES[sensor_type][0],
+                                      arlo,
+                                      sensor_type))
         else:
-            sensors.append(ArloSensor(hass, SENSOR_TYPES[sensor_type][0], arlo, sensor_type))
+            for camera in arlo.cameras:
+                name = '{0} {1}'.format(SENSOR_TYPES[sensor_type][0],
+                                        camera.name)
+                sensors.append(ArloSensor(hass, name, camera, sensor_type))
 
     add_devices(sensors, True)
     return True
@@ -92,11 +95,31 @@ class ArloSensor(Entity):
 
     def update(self):
         """Get the latest data and updates the state."""
-
         self._data.update()
 
         if self._sensor_type == 'total_cameras':
             self._state = len(self._data.cameras)
 
-        elif self._sensor_type == 'recorded_today':
+        elif self._sensor_type == 'captured_today':
             self._state = len(self._data.captured_today)
+
+        elif self._sensor_type == 'last_capture':
+            try:
+                video = self._data.videos()[0]
+                self._state = video.created_at_pretty("%m-%d-%Y %H:%M:%S")
+            except (AttributeError, IndexError):
+                self._state = STATE_UNKNOWN
+
+    @property
+    def device_state_attributes(self):
+        """Return the state attributes."""
+        attrs = {}
+
+        attrs[ATTR_ATTRIBUTION] = CONF_ATTRIBUTION
+        attrs['brand'] = DEFAULT_BRAND
+
+        if self._sensor_type == 'last_capture' or \
+           self._sensor_type == 'captured_today':
+            attrs['model'] = self._data.model_id
+
+        return attrs
