@@ -11,6 +11,9 @@ omit =
     homeassistant/components/alarmdecoder.py
     homeassistant/components/*/alarmdecoder.py
 
+    homeassistant/components/arlo.py
+    homeassistant/components/*/arlo.py
+
     homeassistant/components/apcupsd.py
     homeassistant/components/*/apcupsd.py
 
