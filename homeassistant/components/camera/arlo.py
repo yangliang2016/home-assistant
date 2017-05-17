@@ -4,6 +4,7 @@ This component provides basic support for Netgear Arlo IP cameras.
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/camera.arlo/
 """
+import asyncio
 import logging
 from datetime import timedelta
 import voluptuous as vol
@@ -14,8 +15,10 @@ from homeassistant.components.arlo import (
 
 from homeassistant.components.camera import (Camera, PLATFORM_SCHEMA)
 from homeassistant.const import CONF_ENTITY_NAMESPACE
+from homeassistant.helpers.aiohttp_client import (
+    async_aiohttp_proxy_stream)
 
-DEPENDENCIES = ['arlo']
+DEPENDENCIES = ['arlo', 'ffmpeg']
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,10 +54,29 @@ class ArloCam(Camera):
         self._camera = camera
         self._hass = hass
         self._name = self._camera.name
+        self._ffmpeg_binary = 'ffmpeg'
+        self._extra_arguments = '-filter:v setpts=40.0*PTS'
 
     def camera_image(self):
         """Return a still image reponse from the camera."""
         return self._camera.last_image
+
+    @asyncio.coroutine
+    def handle_async_mjpeg_stream(self, request):
+        """Generate an HTTP MJPEG stream from the camera."""
+        from haffmpeg import CameraMjpeg
+        video = self._camera.last_video
+        if not video:
+            return
+
+        stream =  CameraMjpeg(self._ffmpeg_binary, loop=self.hass.loop)
+        yield from stream.open_camera(
+            video.video_url, extra_cmd=self._extra_arguments)
+
+        yield from async_aiohttp_proxy_stream(
+            self.hass, request, stream,
+            'multipart/x-mixed-replace;boundary=ffserver')
+        yield from stream.close()
 
     @property
     def name(self):
