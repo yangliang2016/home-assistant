@@ -28,7 +28,6 @@ CONF_FFMPEG_BINARY = 'ffmpeg_binary'
 CONTENT_TYPE_HEADER = 'Content-Type'
 TIMEOUT = 5
 
-DEFAULT_FFMPEG_ARGUMENTS = '-pred 1 -q:v 2'
 DEFAULT_FFMPEG_BINARY = '/usr/bin/ffmpeg'
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=90)
@@ -36,7 +35,7 @@ MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=90)
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_ENTITY_NAMESPACE, default=DEFAULT_ENTITY_NAMESPACE):
         cv.string,
-    vol.Optional(CONF_FFMPEG_ARGUMENTS, default=DEFAULT_FFMPEG_ARGUMENTS):
+    vol.Optional(CONF_FFMPEG_ARGUMENTS, default=''):
         cv.string,
     vol.Optional(CONF_FFMPEG_BINARY, default=DEFAULT_FFMPEG_BINARY):
         cv.string,
