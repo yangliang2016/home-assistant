@@ -22,13 +22,23 @@ DEPENDENCIES = ['arlo', 'ffmpeg']
 
 _LOGGER = logging.getLogger(__name__)
 
+CONF_FFMPEG_ARGUMENTS = 'ffmpeg_arguments'
+CONF_FFMPEG_BINARY = 'ffmpeg_binary'
+
 CONTENT_TYPE_HEADER = 'Content-Type'
 TIMEOUT = 5
+
+DEFAULT_FFMPEG_ARGUMENTS = '-pred 1 -q:v 2'
+DEFAULT_FFMPEG_BINARY = '/usr/bin/ffmpeg'
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=90)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_ENTITY_NAMESPACE, default=DEFAULT_ENTITY_NAMESPACE):
+        cv.string,
+    vol.Optional(CONF_FFMPEG_ARGUMENTS, default=DEFAULT_FFMPEG_ARGUMENTS):
+        cv.string,
+    vol.Optional(CONF_FFMPEG_BINARY, default=DEFAULT_FFMPEG_BINARY):
         cv.string,
 })
 
@@ -39,7 +49,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 
     cameras = []
     for camera in arlo.cameras:
-        cameras.append(ArloCam(hass, camera))
+        cameras.append(ArloCam(hass, camera, config))
 
     add_devices(cameras, True)
     return True
@@ -48,14 +58,14 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class ArloCam(Camera):
     """An implementation of a Netgear Arlo IP camera."""
 
-    def __init__(self, hass, camera):
+    def __init__(self, hass, camera, device_info):
         """Initialize an Arlo camera."""
         super(ArloCam, self).__init__()
         self._camera = camera
         self._hass = hass
         self._name = self._camera.name
-        self._ffmpeg_binary = 'ffmpeg'
-        self._extra_arguments = '-filter:v setpts=40.0*PTS'
+        self._ffmpeg_arguments = device_info.get(CONF_FFMPEG_ARGUMENTS)
+        self._ffmpeg_binary = device_info.get(CONF_FFMPEG_BINARY)
 
     def camera_image(self):
         """Return a still image reponse from the camera."""
@@ -71,7 +81,7 @@ class ArloCam(Camera):
 
         stream =  CameraMjpeg(self._ffmpeg_binary, loop=self.hass.loop)
         yield from stream.open_camera(
-            video.video_url, extra_cmd=self._extra_arguments)
+            video.video_url, extra_cmd=self._ffmpeg_arguments)
 
         yield from async_aiohttp_proxy_stream(
             self.hass, request, stream,
