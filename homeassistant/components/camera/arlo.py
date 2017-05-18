@@ -78,7 +78,7 @@ class ArloCam(Camera):
         if not video:
             return
 
-        stream =  CameraMjpeg(self._ffmpeg_binary, loop=self.hass.loop)
+        stream = CameraMjpeg(self._ffmpeg_binary, loop=self.hass.loop)
         yield from stream.open_camera(
             video.video_url, extra_cmd=self._ffmpeg_arguments)
 
