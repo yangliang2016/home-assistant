@@ -14,6 +14,7 @@ from homeassistant.components.arlo import (
     DEFAULT_BRAND, DEFAULT_ENTITY_NAMESPACE)
 
 from homeassistant.components.camera import (Camera, PLATFORM_SCHEMA)
+from homeassistant.components.ffmpeg import DATA_FFMPEG
 from homeassistant.const import CONF_ENTITY_NAMESPACE
 from homeassistant.helpers.aiohttp_client import (
     async_aiohttp_proxy_stream)
@@ -23,12 +24,9 @@ DEPENDENCIES = ['arlo', 'ffmpeg']
 _LOGGER = logging.getLogger(__name__)
 
 CONF_FFMPEG_ARGUMENTS = 'ffmpeg_arguments'
-CONF_FFMPEG_BINARY = 'ffmpeg_binary'
 
 CONTENT_TYPE_HEADER = 'Content-Type'
 TIMEOUT = 5
-
-DEFAULT_FFMPEG_BINARY = '/usr/bin/ffmpeg'
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=60)
 
@@ -36,8 +34,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_ENTITY_NAMESPACE, default=DEFAULT_ENTITY_NAMESPACE):
         cv.string,
     vol.Optional(CONF_FFMPEG_ARGUMENTS, default=''):
-        cv.string,
-    vol.Optional(CONF_FFMPEG_BINARY, default=DEFAULT_FFMPEG_BINARY):
         cv.string,
 })
 
@@ -61,10 +57,9 @@ class ArloCam(Camera):
         """Initialize an Arlo camera."""
         super(ArloCam, self).__init__()
         self._camera = camera
-        self._hass = hass
         self._name = self._camera.name
+        self._ffmpeg = hass.data[DATA_FFMPEG]
         self._ffmpeg_arguments = device_info.get(CONF_FFMPEG_ARGUMENTS)
-        self._ffmpeg_binary = device_info.get(CONF_FFMPEG_BINARY)
 
     def camera_image(self):
         """Return a still image reponse from the camera."""
@@ -78,7 +73,7 @@ class ArloCam(Camera):
         if not video:
             return
 
-        stream = CameraMjpeg(self._ffmpeg_binary, loop=self.hass.loop)
+        stream = CameraMjpeg(self._ffmpeg.binary, loop=self.hass.loop)
         yield from stream.open_camera(
             video.video_url, extra_cmd=self._ffmpeg_arguments)
 
