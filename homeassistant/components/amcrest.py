@@ -1,0 +1,144 @@
+"""
+This component provides basic support for Amcrest IP cameras.
+
+For more details about this component, please refer to the documentation at
+https://home-assistant.io/components/amcrest/
+"""
+import asyncio
+import logging
+from datetime import timedelta
+
+import voluptuous as vol
+
+import homeassistant.loader as loader
+from homeassistant.const import (
+    CONF_NAME, CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD,
+    CONF_SENSORS, CONF_SCAN_INTERVAL)
+import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.entity import Entity
+
+from requests.exceptions import HTTPError, ConnectTimeout
+
+REQUIREMENTS = ['amcrest==1.2.0']
+DEPENDENCIES = ['ffmpeg']
+
+_LOGGER = logging.getLogger(__name__)
+
+ATTR_HOST = 'host'
+
+CONF_RESOLUTION = 'resolution'
+CONF_STREAM_SOURCE = 'stream_source'
+CONF_FFMPEG_ARGUMENTS = 'ffmpeg_arguments'
+
+DEFAULT_NAME = 'Amcrest Camera'
+DEFAULT_PORT = 80
+DEFAULT_RESOLUTION = 'high'
+DEFAULT_STREAM_SOURCE = 'mjpeg'
+DEFAULT_TIMEOUT = 10
+
+DATA_AMCREST = 'amcrest'
+DOMAIN = 'amcrest'
+
+NOTIFICATION_ID = 'amcrest_notification'
+NOTIFICATION_TITLE = 'Amcrest Camera Setup'
+
+RESOLUTION_LIST = {
+    'high': 0,
+    'low': 1,
+}
+
+SCAN_INTERVAL = timedelta(seconds=10)
+
+STREAM_SOURCE_LIST = {
+    'mjpeg': 0,
+    'snapshot': 1,
+    'rtsp': 2,
+}
+
+# Sensor types are defined like: Name, units, icon
+SENSORS = {
+    'motion_detector': ['Motion Detected', None, 'mdi:run'],
+    'sdcard': ['SD Used', '%', 'mdi:sd'],
+    'ptz_preset': ['PTZ Preset', None, 'mdi:camera-iris'],
+}
+
+CONFIG_SCHEMA = vol.Schema({
+    DOMAIN: vol.All(cv.ensure_list, [vol.Schema({
+        vol.Required(CONF_HOST): cv.string,
+        vol.Required(CONF_USERNAME): cv.string,
+        vol.Required(CONF_PASSWORD): cv.string,
+        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+        vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
+        vol.Optional(CONF_RESOLUTION, default=DEFAULT_RESOLUTION):
+            vol.All(vol.In(RESOLUTION_LIST)),
+        vol.Optional(CONF_STREAM_SOURCE, default=DEFAULT_STREAM_SOURCE):
+            vol.All(vol.In(STREAM_SOURCE_LIST)),
+        vol.Optional(CONF_FFMPEG_ARGUMENTS): cv.string,
+        vol.Optional(CONF_SCAN_INTERVAL, default=SCAN_INTERVAL):
+            cv.time_period,
+        vol.Optional(CONF_SENSORS, default=None):
+            vol.All(cv.ensure_list, [vol.In(SENSORS)]),
+    })])
+}, extra=vol.ALLOW_EXTRA)
+
+
+@asyncio.coroutine
+def async_setup(hass, config):
+    """Set up the Amcrest IP Camera component."""
+    from amcrest import AmcrestCamera
+
+    amcrest_data = hass.data[DOMAIN] = []
+    amcrest_cams = config[DOMAIN]
+
+    persistent_notification = loader.get_component('persistent_notification')
+    for pos in enumerate(amcrest_cams):
+        camera = AmcrestCamera(
+            amcrest_cams[pos].get(CONF_HOST),
+            amcrest_cams[pos].get(CONF_PORT),
+            amcrest_cams[pos].get(CONF_USERNAME),
+            amcrest_cams[pos].get(CONF_PASSWORD)).camera
+        try:
+            camera.current_time
+
+        except (ConnectTimeout, HTTPError) as ex:
+            _LOGGER.error("Unable to connect to Amcrest camera: %s", str(ex))
+            persistent_notification.create(
+                hass, 'Error: {}<br />'
+                'You will need to restart hass after fixing.'
+                ''.format(ex),
+                title=NOTIFICATION_TITLE,
+                notification_id=NOTIFICATION_ID)
+            return False
+
+        ffmpeg_arguments = amcrest_cams[pos].get(CONF_FFMPEG_ARGUMENTS)
+        name = amcrest_cams[pos].get(CONF_NAME)
+        resolution = RESOLUTION_LIST[amcrest_cams[pos].get(CONF_RESOLUTION)]
+        sensors = amcrest_cams[pos].get(CONF_SENSORS)
+        stream_source = STREAM_SOURCE_LIST[
+            amcrest_cams[pos].get(CONF_STREAM_SOURCE)]
+
+        amcrest_data.append(AmcrestEntity(camera,
+                                          name,
+                                          resolution,
+                                          stream_source,
+                                          ffmpeg_arguments,
+                                          sensors))
+
+    return True
+
+
+class AmcrestEntity(Entity):
+    """The Amcrest device entity."""
+
+    def __init__(self, camera, name, resolution, stream_source,
+                 ffmpeg_arguments, sensors):
+        self._camera = camera
+        self._name = name
+        self._resolution = resolution
+        self._stream_source = stream_source
+        self._ffmpeg_arguments = ffmpeg_arguments
+        self._sensors = sensors
+
+    @property
+    def name(self):
+        return self._name
