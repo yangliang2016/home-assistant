@@ -133,10 +133,15 @@ class AmcrestEntity(Entity):
                  password, stream_source, ffmpeg_arguments, sensors):
         """Initialize Amcrest Entity object."""
         self.camera = camera
-        self.name = name
+        self._name = name
         self.resolution = resolution
         self.username = username
         self.password = password
         self.stream_source = stream_source
         self.ffmpeg_arguments = ffmpeg_arguments
         self.sensors = sensors
+
+    @property
+    def name(self):
+        """Return the name."""
+        return self._name
