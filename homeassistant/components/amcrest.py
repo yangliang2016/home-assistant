@@ -8,12 +8,13 @@ import asyncio
 import logging
 from datetime import timedelta
 
+import aiohttp
 import voluptuous as vol
 
 import homeassistant.loader as loader
 from homeassistant.const import (
     CONF_NAME, CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD,
-    CONF_SENSORS, CONF_SCAN_INTERVAL)
+    CONF_SENSORS, CONF_SCAN_INTERVAL, HTTP_DIGEST_AUTHENTICATION)
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import Entity
 
@@ -24,6 +25,7 @@ DEPENDENCIES = ['ffmpeg']
 
 _LOGGER = logging.getLogger(__name__)
 
+CONF_AUTHENTICATION = 'authentication'
 CONF_RESOLUTION = 'resolution'
 CONF_STREAM_SOURCE = 'stream_source'
 CONF_FFMPEG_ARGUMENTS = 'ffmpeg_arguments'
@@ -46,6 +48,10 @@ RESOLUTION_LIST = {
 
 SCAN_INTERVAL = timedelta(seconds=10)
 
+AUTHENTICATION_LIST = {
+    'basic': 'basic'
+}
+
 STREAM_SOURCE_LIST = {
     'mjpeg': 0,
     'snapshot': 1,
@@ -66,6 +72,8 @@ CONFIG_SCHEMA = vol.Schema({
         vol.Required(CONF_PASSWORD): cv.string,
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
         vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
+        vol.Optional(CONF_AUTHENTICATION, default=HTTP_DIGEST_AUTHENTICATION):
+            vol.All(vol.In(AUTHENTICATION_LIST)),
         vol.Optional(CONF_RESOLUTION, default=DEFAULT_RESOLUTION):
             vol.All(vol.In(RESOLUTION_LIST)),
         vol.Optional(CONF_STREAM_SOURCE, default=DEFAULT_STREAM_SOURCE):
@@ -111,14 +119,22 @@ def async_setup(hass, config):
         resolution = RESOLUTION_LIST[device.get(CONF_RESOLUTION)]
         sensors = device.get(CONF_SENSORS)
         stream_source = STREAM_SOURCE_LIST[device.get(CONF_STREAM_SOURCE)]
+
         username = device.get(CONF_USERNAME)
         password = device.get(CONF_PASSWORD)
 
+        # currently aiohttp only works with basic authentication
+        # only valid for mjpeg streaming
+        if username is not None and password is not None:
+            if device.get(CONF_AUTHENTICATION) == HTTP_DIGEST_AUTHENTICATION:
+                authentication = aiohttp.BasicAuth(username, password)
+            else:
+                authentication = None
+
         amcrest_data.append(AmcrestEntity(camera,
                                           name,
+                                          authentication,
                                           resolution,
-                                          username,
-                                          password,
                                           stream_source,
                                           ffmpeg_arguments,
                                           sensors))
@@ -129,17 +145,16 @@ def async_setup(hass, config):
 class AmcrestEntity(Entity):
     """The Amcrest device entity."""
 
-    def __init__(self, camera, name, resolution, username,
-                 password, stream_source, ffmpeg_arguments, sensors):
+    def __init__(self, camera, name, authentication, resolution,
+                 stream_source, ffmpeg_arguments, sensors):
         """Initialize Amcrest Entity object."""
+        self.authentication = authentication
         self.camera = camera
-        self._name = name
-        self.resolution = resolution
-        self.username = username
-        self.password = password
-        self.stream_source = stream_source
         self.ffmpeg_arguments = ffmpeg_arguments
+        self.resolution = resolution
         self.sensors = sensors
+        self.stream_source = stream_source
+        self._name = name
 
     @property
     def name(self):

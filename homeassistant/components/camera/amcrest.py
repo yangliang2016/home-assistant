@@ -7,8 +7,6 @@ https://home-assistant.io/components/camera.amcrest/
 import asyncio
 import logging
 
-import aiohttp
-
 from homeassistant.components.amcrest import (
     STREAM_SOURCE_LIST, TIMEOUT)
 from homeassistant.components.camera import Camera
@@ -34,8 +32,7 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
         cameras.append(AmcrestCam(hass,
                                   device.name,
                                   device.camera,
-                                  device.username,
-                                  device.password,
+                                  device.authentication,
                                   device.ffmpeg_arguments,
                                   device.stream_source,
                                   device.resolution))
@@ -47,7 +44,7 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
 class AmcrestCam(Camera):
     """An implementation of an Amcrest IP camera."""
 
-    def __init__(self, hass, name, camera, username, password,
+    def __init__(self, hass, name, camera, authentication,
                  ffmpeg_arguments, stream_source, resolution):
         """Initialize an Amcrest camera."""
         super(AmcrestCam, self).__init__()
@@ -58,7 +55,7 @@ class AmcrestCam(Camera):
         self._ffmpeg_arguments = ffmpeg_arguments
         self._stream_source = stream_source
         self._resolution = resolution
-        self._token = self._auth = aiohttp.BasicAuth(username, password)
+        self._token = self._auth = authentication
 
     def camera_image(self):
         """Return a still image reponse from the camera."""
