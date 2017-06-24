@@ -112,7 +112,7 @@ def async_setup(hass, config):
         sensors = device.get(CONF_SENSORS)
         stream_source = STREAM_SOURCE_LIST[device.get(CONF_STREAM_SOURCE)]
         username = device.get(CONF_USERNAME)
-        passowrd = device.get(CONF_PASSWORD)
+        password = device.get(CONF_PASSWORD)
 
         amcrest_data.append(AmcrestEntity(camera,
                                           name,
