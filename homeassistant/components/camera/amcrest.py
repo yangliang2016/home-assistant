@@ -9,7 +9,8 @@ import logging
 
 import aiohttp
 
-from homeassistant.components.amcrest import STREAM_SOURCE_LIST
+from homeassistant.components.amcrest import (
+    STREAM_SOURCE_LIST, TIMEOUT)
 from homeassistant.components.camera import Camera
 from homeassistant.components.ffmpeg import DATA_FFMPEG
 from homeassistant.helpers.aiohttp_client import (
@@ -17,8 +18,6 @@ from homeassistant.helpers.aiohttp_client import (
     async_aiohttp_proxy_stream)
 
 DEPENDENCIES = ['amcrest', 'ffmpeg']
-
-TIMEOUT = 10
 
 _LOGGER = logging.getLogger(__name__)
 

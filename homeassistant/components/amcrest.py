@@ -24,8 +24,6 @@ DEPENDENCIES = ['ffmpeg']
 
 _LOGGER = logging.getLogger(__name__)
 
-ATTR_HOST = 'host'
-
 CONF_RESOLUTION = 'resolution'
 CONF_STREAM_SOURCE = 'stream_source'
 CONF_FFMPEG_ARGUMENTS = 'ffmpeg_arguments'
@@ -34,9 +32,8 @@ DEFAULT_NAME = 'Amcrest Camera'
 DEFAULT_PORT = 80
 DEFAULT_RESOLUTION = 'high'
 DEFAULT_STREAM_SOURCE = 'mjpeg'
-DEFAULT_TIMEOUT = 10
+TIMEOUT = 10
 
-DATA_AMCREST = 'amcrest'
 DOMAIN = 'amcrest'
 
 NOTIFICATION_ID = 'amcrest_notification'
@@ -91,12 +88,11 @@ def async_setup(hass, config):
     amcrest_cams = config[DOMAIN]
 
     persistent_notification = loader.get_component('persistent_notification')
-    for pos in enumerate(amcrest_cams):
-        camera = AmcrestCamera(
-            amcrest_cams[pos].get(CONF_HOST),
-            amcrest_cams[pos].get(CONF_PORT),
-            amcrest_cams[pos].get(CONF_USERNAME),
-            amcrest_cams[pos].get(CONF_PASSWORD)).camera
+    for device in amcrest_cams:
+        camera = AmcrestCamera(device.get(CONF_HOST),
+                               device.get(CONF_PORT),
+                               device.get(CONF_USERNAME),
+                               device.get(CONF_PASSWORD)).camera
         try:
             camera.current_time
 
@@ -110,12 +106,11 @@ def async_setup(hass, config):
                 notification_id=NOTIFICATION_ID)
             return False
 
-        ffmpeg_arguments = amcrest_cams[pos].get(CONF_FFMPEG_ARGUMENTS)
-        name = amcrest_cams[pos].get(CONF_NAME)
-        resolution = RESOLUTION_LIST[amcrest_cams[pos].get(CONF_RESOLUTION)]
-        sensors = amcrest_cams[pos].get(CONF_SENSORS)
-        stream_source = STREAM_SOURCE_LIST[
-            amcrest_cams[pos].get(CONF_STREAM_SOURCE)]
+        ffmpeg_arguments = device.get(CONF_FFMPEG_ARGUMENTS)
+        name = device.get(CONF_NAME)
+        resolution = RESOLUTION_LIST[device.get(CONF_RESOLUTION)]
+        sensors = device.get(CONF_SENSORS)
+        stream_source = STREAM_SOURCE_LIST[device.get(CONF_STREAM_SOURCE)]
 
         amcrest_data.append(AmcrestEntity(camera,
                                           name,

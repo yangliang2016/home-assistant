@@ -8,20 +8,13 @@ import asyncio
 from datetime import timedelta
 import logging
 
-from homeassistant.components.amcrest import SENSORS
+from homeassistant.components.amcrest import (SENSORS, SCAN_INTERVAL)
 from homeassistant.helpers.entity import Entity
 from homeassistant.const import STATE_UNKNOWN
 
 DEPENDENCIES = ['amcrest', 'ffmpeg']
 
 _LOGGER = logging.getLogger(__name__)
-
-NOTIFICATION_ID = 'amcrest_notification'
-NOTIFICATION_TITLE = 'Amcrest Sensor Setup'
-
-DEFAULT_NAME = 'Amcrest'
-DEFAULT_PORT = 80
-SCAN_INTERVAL = timedelta(seconds=10)
 
 
 @asyncio.coroutine
