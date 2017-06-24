@@ -32,11 +32,13 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     cameras = []
     for device in amcrest_data:
         cameras.append(AmcrestCam(hass,
-                                  device._name,
-                                  device._camera,
-                                  device._ffmpeg_arguments,
-                                  device._stream_source,
-                                  device._resolution))
+                                  device.name,
+                                  device.camera,
+                                  device.username,
+                                  device.password,
+                                  device.ffmpeg_arguments,
+                                  device.stream_source,
+                                  device.resolution))
 
     async_add_devices(cameras, True)
     return True
@@ -45,8 +47,8 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
 class AmcrestCam(Camera):
     """An implementation of an Amcrest IP camera."""
 
-    def __init__(self, hass, name, camera, ffmpeg_arguments,
-                 stream_source, resolution):
+    def __init__(self, hass, name, camera, username, password,
+                 ffmpeg_arguments, stream_source, resolution):
         """Initialize an Amcrest camera."""
         super(AmcrestCam, self).__init__()
         self._name = name
@@ -56,10 +58,7 @@ class AmcrestCam(Camera):
         self._ffmpeg_arguments = ffmpeg_arguments
         self._stream_source = stream_source
         self._resolution = resolution
-        self._token = self._auth = aiohttp.BasicAuth(
-            self._camera._user,
-            self._camera._password,
-        )
+        self._token = self._auth = aiohttp.BasicAuth(username, password)
 
     def camera_image(self):
         """Return a still image reponse from the camera."""

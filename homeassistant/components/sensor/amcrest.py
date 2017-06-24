@@ -8,13 +8,15 @@ import asyncio
 from datetime import timedelta
 import logging
 
-from homeassistant.components.amcrest import (SENSORS, SCAN_INTERVAL)
+from homeassistant.components.amcrest import SENSORS
 from homeassistant.helpers.entity import Entity
 from homeassistant.const import STATE_UNKNOWN
 
 DEPENDENCIES = ['amcrest', 'ffmpeg']
 
 _LOGGER = logging.getLogger(__name__)
+
+SCAN_INTERVAL = timedelta(seconds=10)
 
 
 @asyncio.coroutine
@@ -26,9 +28,9 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
 
     amcrest_sensors = []
     for device in amcrest_data:
-        for sensor_type in device._sensors:
-            amcrest_sensors.append(AmcrestSensor(device._name,
-                                                 device._camera,
+        for sensor_type in device.sensors:
+            amcrest_sensors.append(AmcrestSensor(device.name,
+                                                 device.camera,
                                                  sensor_type))
 
     async_add_devices(amcrest_sensors, True)

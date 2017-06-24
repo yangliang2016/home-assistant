@@ -111,10 +111,14 @@ def async_setup(hass, config):
         resolution = RESOLUTION_LIST[device.get(CONF_RESOLUTION)]
         sensors = device.get(CONF_SENSORS)
         stream_source = STREAM_SOURCE_LIST[device.get(CONF_STREAM_SOURCE)]
+        username = device.get(CONF_USERNAME)
+        passowrd = device.get(CONF_PASSWORD)
 
         amcrest_data.append(AmcrestEntity(camera,
                                           name,
                                           resolution,
+                                          username,
+                                          password,
                                           stream_source,
                                           ffmpeg_arguments,
                                           sensors))
@@ -125,15 +129,14 @@ def async_setup(hass, config):
 class AmcrestEntity(Entity):
     """The Amcrest device entity."""
 
-    def __init__(self, camera, name, resolution, stream_source,
-                 ffmpeg_arguments, sensors):
-        self._camera = camera
-        self._name = name
-        self._resolution = resolution
-        self._stream_source = stream_source
-        self._ffmpeg_arguments = ffmpeg_arguments
-        self._sensors = sensors
-
-    @property
-    def name(self):
-        return self._name
+    def __init__(self, camera, name, resolution, username,
+                 password, stream_source, ffmpeg_arguments, sensors):
+        """Initialize Amcrest Entity object."""
+        self.camera = camera
+        self.name = name
+        self.resolution = resolution
+        self.username = username
+        self.password = password
+        self.stream_source = stream_source
+        self.ffmpeg_arguments = ffmpeg_arguments
+        self.sensors = sensors
