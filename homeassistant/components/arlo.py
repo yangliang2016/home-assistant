@@ -13,7 +13,7 @@ import homeassistant.loader as loader
 from homeassistant.helpers import config_validation as cv
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
 
-REQUIREMENTS = ['pyarlo==0.0.4']
+REQUIREMENTS = ['pyarlo==0.0.5']
 
 _LOGGER = logging.getLogger(__name__)
 

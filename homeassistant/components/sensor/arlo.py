@@ -24,6 +24,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # sensor_type [ description, unit, icon ]
 SENSOR_TYPES = {
+    'battery': ['Battery', '%', 'battery'],
     'last_capture': ['Last', None, 'run-fast'],
     'total_cameras': ['Arlo Cameras', None, 'video'],
     'captured_today': ['Captured Today', None, 'file-video'],
@@ -98,7 +99,11 @@ class ArloSensor(Entity):
         """Get the latest data and updates the state."""
         self._data.update()
 
-        if self._sensor_type == 'total_cameras':
+        if self._sensor_type == 'battery':
+            #import pdb; pdb.set_trace()
+            self._state = self._data.get_battery_level
+
+        elif self._sensor_type == 'total_cameras':
             self._state = len(self._data.cameras)
 
         elif self._sensor_type == 'captured_today':
