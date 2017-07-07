@@ -100,8 +100,11 @@ class ArloSensor(Entity):
         self._data.update()
 
         if self._sensor_type == 'battery':
-            #import pdb; pdb.set_trace()
-            self._state = self._data.get_battery_level
+            try:
+                self._state = self._data.get_battery_level
+            except:
+                import pdb; pdb.set_trace()
+                self._state = '?'
 
         elif self._sensor_type == 'total_cameras':
             self._state = len(self._data.cameras)
