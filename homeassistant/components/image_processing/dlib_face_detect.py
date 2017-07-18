@@ -13,8 +13,6 @@ import voluptuous as vol
 
 from homeassistant.core import split_entity_id, callback
 # pylint: disable=unused-import
-from homeassistant.components.image_processing.dlib_face_identify import (
-    keep_image)
 from homeassistant.components.image_processing import PLATFORM_SCHEMA  # noqa
 from homeassistant.components.image_processing import (
     ATTR_ENTITY_ID, CONF_SOURCE, CONF_ENTITY_ID, CONF_NAME)
@@ -39,6 +37,16 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_WITH_FACES, default=False): cv.boolean,
     vol.Optional(CONF_WITHOUT_FACES, default=False): cv.boolean,
 })
+
+def keep_image(image, filename):
+    """Save image for troubleshooting."""
+    directory = os.path.dirname(filename)
+
+    if not os.path.isdir(directory):
+        os.mkdir(directory)
+
+    with open(filename, 'wb') as fdb:
+        fdb.write(image.getvalue())
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
