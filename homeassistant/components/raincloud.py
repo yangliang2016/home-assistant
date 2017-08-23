@@ -12,7 +12,7 @@ from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
 
 from requests.exceptions import HTTPError, ConnectTimeout
 
-#REQUIREMENTS = ['raincloudy==0.0.1]
+REQUIREMENTS = ['raincloudy==0.0.1']
 
 _LOGGER = logging.getLogger(__name__)
 
