@@ -27,8 +27,10 @@ SCAN_INTERVAL = timedelta(seconds=15)
 # Sensor types: label, desc, unit, icon
 SENSOR_TYPES = {
     'battery': ['Battery', '%', 'battery-50'],
+    'next_cycle': ['Next Cycle', '', 'calendar-clock'],
+    'rain_delay': ['Rain Delay', '', 'weather-rainy'],
     'status': ['Status', '', 'access-point-network'],
-    'watering': ['Watering', '', 'water-pump'],
+    'watering_time': ['Watering Time', 'min', 'water-pump'],
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -46,23 +48,24 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     sensors = []
     for sensor_type in config.get(CONF_MONITORED_CONDITIONS):
         if sensor_type == 'status':
-            sensors.append(RainCloudSensor(hass,
-                                           raincloud.controller,
-                                           sensor_type))
-            sensors.append(RainCloudSensor(hass,
-                                           raincloud.controller.faucet,
-                                           sensor_type))
-        elif sensor_type == 'watering_time':
-            for zone in len(raincloud.controller.faucet.zones):
-                sensors.append(
-                    RainCloudSensor(hass,
-                                    raincloud.controller.faucet,
-                                    sensor_type))
+            sensors.append(
+                RainCloudSensor(hass,
+                                raincloud.controller,
+                                sensor_type))
+            sensors.append(
+                RainCloudSensor(hass,
+                                raincloud.controller.faucet,
+                                sensor_type))
 
+        elif sensor_type == 'battery':
+            sensors.append(
+                RainCloudSensor(hass,
+                                raincloud.controller.faucet,
+                                sensor_type))
         else:
-            sensors.append(RainCloudSensor(hass,
-                                           raincloud.controller.faucet,
-                                           sensor_type))
+            # create an sensor for each zone managed by faucet
+            for zone in raincloud.controller.faucet.zones:
+                sensors.append(RainCloudSensor(hass, zone, sensor_type))
 
     add_devices(sensors, True)
     return True
@@ -99,6 +102,7 @@ class RainCloudSensor(Entity):
 
         attrs[ATTR_ATTRIBUTION] = CONF_ATTRIBUTION
         attrs['serial'] = self._data.serial
+        attrs['current_time'] = self._data.current_time
         return attrs
 
     @property
@@ -115,13 +119,10 @@ class RainCloudSensor(Entity):
         """Get the latest data and updates the state."""
         _LOGGER.debug("Pulling data from %s sensor", self._name)
 
-        self._data.update()
-
         if self._sensor_type == 'battery':
+            # run just 1 update
+            self._data.update()
             self._state = self._data.battery.strip('%')
 
-        elif self._sensor_type == 'status':
-            self._state = self._data.status
-
-        elif self._sensor_type == 'watering':
-            self._state = self._data.zone1_watering_time
+        else:
+            self._state = getattr(self._data, self._sensor_type)
