@@ -4,7 +4,6 @@ Support for Melnor RainCloud sprinkler water timer.
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/sensor.raincloud/
 """
-from datetime import timedelta
 import logging
 
 import voluptuous as vol
@@ -21,8 +20,6 @@ from homeassistant.helpers.entity import Entity
 DEPENDENCIES = ['raincloud']
 
 _LOGGER = logging.getLogger(__name__)
-
-SCAN_INTERVAL = timedelta(seconds=15)
 
 # Sensor types: label, desc, unit, icon
 SENSOR_TYPES = {
