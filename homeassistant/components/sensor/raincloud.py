@@ -25,7 +25,7 @@ _LOGGER = logging.getLogger(__name__)
 SENSOR_TYPES = {
     'battery': ['Battery', '%', 'battery-50'],
     'next_cycle': ['Next Cycle', '', 'calendar-clock'],
-    'rain_delay': ['Rain Delay', '', 'weather-rainy'],
+    'rain_delay': ['Rain Delay', 'days', 'weather-rainy'],
     'status': ['Status', '', 'access-point-network'],
     'watering_time': ['Watering Time', 'min', 'water-pump'],
 }
