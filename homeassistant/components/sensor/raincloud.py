@@ -40,7 +40,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up a sensor for a raincloud device."""
-    raincloud = hass.data.get('raincloud')
+    raincloud = hass.data.get('raincloud')._data
 
     sensors = []
     for sensor_type in config.get(CONF_MONITORED_CONDITIONS):
@@ -114,7 +114,7 @@ class RainCloudSensor(Entity):
 
     def update(self):
         """Get the latest data and updates the state."""
-        _LOGGER.debug("Pulling data from %s sensor", self._name)
+        _LOGGER.info("MMM sensor update")
 
         if self._sensor_type == 'battery':
             # run just 1 update

@@ -2,27 +2,28 @@
 Support for Melnor RainCloud sprinkler water timer.
 
 For more details about this platform, please refer to the documentation at
-https://home-assistant.io/components/binary_sensor.raincloud/
+https://home-assistant.io/components/switch.raincloud/
 """
 import logging
 
 import voluptuous as vol
 
 import homeassistant.helpers.config_validation as cv
-from homeassistant.components.raincloud import DEFAULT_ENTITY_NAMESPACE
-from homeassistant.components.binary_sensor import (
-    BinarySensorDevice, PLATFORM_SCHEMA)
+from homeassistant.components.raincloud import (
+    CONF_ATTRIBUTION, DEFAULT_ENTITY_NAMESPACE, DOMAIN)
+from homeassistant.components.switch import SwitchDevice, PLATFORM_SCHEMA
 from homeassistant.const import (
-    CONF_ENTITY_NAMESPACE, CONF_MONITORED_CONDITIONS)
+    CONF_ENTITY_NAMESPACE, CONF_MONITORED_CONDITIONS,
+    ATTR_ATTRIBUTION)
+from homeassistant.helpers.entity import Entity
 
 DEPENDENCIES = ['raincloud']
 
 _LOGGER = logging.getLogger(__name__)
 
+# Sensor types: label, desc, unit, icon
 SENSOR_TYPES = {
-    'auto_watering': ['Auto Watering', ''],
-    'is_watering': ['Watering', 'moisture'],
-    'status': ['Status', ''],
+    'watering_time': ['Watering Time', 'min', 'water-pump'],
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -35,30 +36,21 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up a sensor for a raincloud device."""
+    conf = config[DOMAIN]
+    watering_time = conf.get(CONF_WATERING_TIME)
     raincloud = hass.data.get('raincloud')._data
 
     sensors = []
     for sensor_type in config.get(CONF_MONITORED_CONDITIONS):
-        if sensor_type == 'status':
-            sensors.append(
-                RainCloudBinarySensor(hass,
-                                      raincloud.controller,
-                                      sensor_type))
-            sensors.append(
-                RainCloudBinarySensor(hass,
-                                      raincloud.controller.faucet,
-                                      sensor_type))
-
-        else:
-            # create an sensor for each zone managed by faucet
-            for zone in raincloud.controller.faucet.zones:
-                sensors.append(RainCloudBinarySensor(hass, zone, sensor_type))
+        # create an sensor for each zone managed by faucet
+        for zone in raincloud.controller.faucet.zones:
+            sensors.append(RainCloudSwitch(hass, zone, sensor_type))
 
     add_devices(sensors, True)
     return True
 
 
-class RainCloudBinarySensor(BinarySensorDevice):
+class RainCloudSwitch(Entity):
     """A sensor implementation for raincloud device."""
 
     def __init__(self, hass, data, sensor_type):
@@ -66,9 +58,10 @@ class RainCloudBinarySensor(BinarySensorDevice):
         super().__init__()
         self._sensor_type = sensor_type
         self._data = data
+        self._icon = 'mdi:{}'.format(SENSOR_TYPES.get(self._sensor_type)[2])
         self._name = "{0} {1}".format(
             self._data.name, SENSOR_TYPES.get(self._sensor_type)[0])
-        self._state = None
+        self._state = 'on'
 
     @property
     def name(self):
@@ -76,15 +69,21 @@ class RainCloudBinarySensor(BinarySensorDevice):
         return self._name
 
     @property
-    def is_on(self):
-        """Return true if the binary sensor is on."""
+    def state(self):
+        """Return the state of the sensor."""
         return self._state
 
-    def update(self):
-        """Get the latest data and updates the state."""
-        self._state = getattr(self._data, self._sensor_type)
+    @property
+    def device_state_attributes(self):
+        """Return the state attributes."""
+        attrs = {}
+
+        attrs[ATTR_ATTRIBUTION] = CONF_ATTRIBUTION
+        attrs['serial'] = self._data.serial
+        attrs['current_time'] = self._data.current_time
+        return attrs
 
     @property
-    def device_class(self):
-        """Return the class of this device."""
-        return SENSOR_TYPES.get(self._sensor_type)[1]
+    def icon(self):
+        """Icon to use in the frontend, if any."""
+        return self._icon
