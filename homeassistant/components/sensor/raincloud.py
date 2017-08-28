@@ -58,6 +58,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 
 class RainCloudSensor(Entity):
     """A sensor implementation for raincloud device."""
+
     def __init__(self, data, sensor_type):
         """Initialize a sensor for raincloud device."""
         self._data = data

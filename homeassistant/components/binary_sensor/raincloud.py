@@ -20,8 +20,8 @@ DEPENDENCIES = ['raincloud']
 _LOGGER = logging.getLogger(__name__)
 
 SENSOR_TYPES = {
-    'auto_watering': ['Auto Watering', ''],
-    'is_watering': ['Watering', 'moisture'],
+    'auto_watering': ['Auto Watering', 'mdi:autorenew'],
+    'is_watering': ['Watering', ''],
     'status': ['Status', ''],
 }
 
@@ -86,6 +86,10 @@ class RainCloudBinarySensor(BinarySensorDevice):
         self._state = getattr(self._data, self._sensor_type)
 
     @property
-    def device_class(self):
-        """Return the class of this device."""
+    def icon(self):
+        """Return the icon of this device."""
+        if self._sensor_type == 'is_watering':
+            return 'mdi:water' if self.is_on else 'mdi:water-off'
+        elif self._sensor_type == 'status':
+            return 'mdi:pipe' if self.is_on else 'mdi:pipe-disconnected'
         return SENSOR_TYPES.get(self._sensor_type)[1]
