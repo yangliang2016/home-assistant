@@ -12,7 +12,7 @@ import homeassistant.helpers.config_validation as cv
 
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
 from homeassistant.helpers.entity import Entity
-from homeassistant.util import Throttle
+from homeassistant.helpers.event import track_time_interval
 
 from requests.exceptions import HTTPError, ConnectTimeout
 
@@ -32,7 +32,7 @@ DOMAIN = 'raincloud'
 DEFAULT_ENTITY_NAMESPACE = 'raincloud'
 DEFAULT_WATERING_TIME = 15
 
-MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
+SCAN_INTERVAL_HUB = timedelta(seconds=20)
 
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
@@ -56,7 +56,7 @@ def setup(hass, config):
         raincloud = RainCloudy(username=username, password=password)
         if not raincloud.is_connected:
             return False
-        hass.data['raincloud'] = RainCloudEntity(raincloud)
+        hass.data['raincloud'] = RainCloudHub(hass, raincloud)
     except (ConnectTimeout, HTTPError) as ex:
         _LOGGER.error("Unable to connect to Rain Cloud service: %s", str(ex))
         hass.components.persistent_notification.create(
@@ -69,17 +69,23 @@ def setup(hass, config):
     return True
 
 
-class RainCloudEntity(Entity):
+class RainCloudHub(Entity):
     """Base class for all Raincloud entities."""
 
-    def __init__(self, data):
+    def __init__(self, hass, data):
         """Initialize the entity."""
-        self._data = data
+        self.data = data
 
-    @Throttle(MIN_TIME_BETWEEN_UPDATES)
-    def update(self):
-        _LOGGER.info("MMMMMMM CALLED DEBUG")
-        self._data.update()
-        self.schedule_update_ha_state()
+        # Load data
+        track_time_interval(hass, self._update_hub, SCAN_INTERVAL_HUB)
+        self._update_hub(SCAN_INTERVAL_HUB)
 
+    @property
+    def should_poll(self):
+        """Return false. RainCloud Hub object updates variables."""
+        return False
 
+    def _update_hub(self, now):
+        """Refresh data from for all child objects."""
+        _LOGGER.debug("Updating RainCloud Hub component.")
+        self.data.update()

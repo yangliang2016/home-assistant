@@ -35,7 +35,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up a sensor for a raincloud device."""
-    raincloud = hass.data.get('raincloud')._data
+    raincloud = hass.data.get('raincloud').data
 
     sensors = []
     for sensor_type in config.get(CONF_MONITORED_CONDITIONS):
@@ -82,6 +82,7 @@ class RainCloudBinarySensor(BinarySensorDevice):
 
     def update(self):
         """Get the latest data and updates the state."""
+        _LOGGER.debug("Updating RainCloud sensor: %s", self._name)
         self._state = getattr(self._data, self._sensor_type)
 
     @property
