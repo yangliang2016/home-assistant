@@ -49,6 +49,7 @@ def setup(hass, config):
     conf = config[DOMAIN]
     username = conf.get(CONF_USERNAME)
     password = conf.get(CONF_PASSWORD)
+    default_watering_timer = conf.get(CONF_WATERING_TIME)
 
     try:
         from raincloudy.core import RainCloudy
@@ -56,7 +57,9 @@ def setup(hass, config):
         raincloud = RainCloudy(username=username, password=password)
         if not raincloud.is_connected:
             return False
-        hass.data['raincloud'] = RainCloudHub(hass, raincloud)
+        hass.data['raincloud'] = RainCloudHub(hass,
+                                              raincloud,
+                                              default_watering_timer)
     except (ConnectTimeout, HTTPError) as ex:
         _LOGGER.error("Unable to connect to Rain Cloud service: %s", str(ex))
         hass.components.persistent_notification.create(
@@ -72,9 +75,10 @@ def setup(hass, config):
 class RainCloudHub(Entity):
     """Base class for all Raincloud entities."""
 
-    def __init__(self, hass, data):
+    def __init__(self, hass, data, default_watering_timer):
         """Initialize the entity."""
         self.data = data
+        self.default_watering_timer = default_watering_timer
 
         # Load data
         track_time_interval(hass, self._update_hub, SCAN_INTERVAL_HUB)

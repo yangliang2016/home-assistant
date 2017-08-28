@@ -9,13 +9,10 @@ import logging
 import voluptuous as vol
 
 import homeassistant.helpers.config_validation as cv
-from homeassistant.components.raincloud import (
-    CONF_ATTRIBUTION, DEFAULT_ENTITY_NAMESPACE, DOMAIN)
+from homeassistant.components.raincloud import CONF_ATTRIBUTION
 from homeassistant.components.switch import SwitchDevice, PLATFORM_SCHEMA
 from homeassistant.const import (
-    CONF_ENTITY_NAMESPACE, CONF_MONITORED_CONDITIONS,
-    ATTR_ATTRIBUTION)
-from homeassistant.helpers.entity import Entity
+    CONF_MONITORED_CONDITIONS, ATTR_ATTRIBUTION)
 
 DEPENDENCIES = ['raincloud']
 
@@ -23,12 +20,10 @@ _LOGGER = logging.getLogger(__name__)
 
 # Sensor types: label, desc, unit, icon
 SENSOR_TYPES = {
-    'watering_time': ['Watering Time', 'min', 'water-pump'],
+    'manual_watering': ['Manual Watering', '', 'water-pump'],
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Optional(CONF_ENTITY_NAMESPACE, default=DEFAULT_ENTITY_NAMESPACE):
-        cv.string,
     vol.Required(CONF_MONITORED_CONDITIONS, default=list(SENSOR_TYPES)):
         vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
 })
@@ -36,32 +31,33 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up a sensor for a raincloud device."""
-    conf = config[DOMAIN]
-    watering_time = conf.get(CONF_WATERING_TIME)
-    raincloud = hass.data.get('raincloud')._data
+    raincloud_hub = hass.data.get('raincloud')
+    raincloud = raincloud_hub.data
+    default_watering_timer = raincloud_hub.default_watering_timer
 
     sensors = []
     for sensor_type in config.get(CONF_MONITORED_CONDITIONS):
         # create an sensor for each zone managed by faucet
         for zone in raincloud.controller.faucet.zones:
-            sensors.append(RainCloudSwitch(hass, zone, sensor_type))
+            sensors.append(
+                RainCloudSwitch(zone, sensor_type, default_watering_timer))
 
     add_devices(sensors, True)
     return True
 
 
-class RainCloudSwitch(Entity):
-    """A sensor implementation for raincloud device."""
+class RainCloudSwitch(SwitchDevice):
+    """A switch implementation for raincloud device."""
 
-    def __init__(self, hass, data, sensor_type):
-        """Initialize a sensor for raincloud device."""
-        super().__init__()
+    def __init__(self, data, sensor_type, default_watering_timer):
+        """Initialize a switch for raincloud device."""
         self._sensor_type = sensor_type
         self._data = data
+        self._default_watering_timer = default_watering_timer
         self._icon = 'mdi:{}'.format(SENSOR_TYPES.get(self._sensor_type)[2])
         self._name = "{0} {1}".format(
             self._data.name, SENSOR_TYPES.get(self._sensor_type)[0])
-        self._state = 'on'
+        self._state = None
 
     @property
     def name(self):
@@ -69,9 +65,30 @@ class RainCloudSwitch(Entity):
         return self._name
 
     @property
-    def state(self):
-        """Return the state of the sensor."""
+    def is_on(self):
+        """Return true if device is on."""
         return self._state
+
+    def turn_on(self):
+        """Turn the device on."""
+        self._data.watering_time = self._default_watering_timer
+        self._state = True
+
+    def turn_off(self):
+        """Turn the device off."""
+        self._data.watering_time = 'off'
+        self._state = False
+
+    def update(self):
+        """Update device state."""
+        _LOGGER.debug("Updating RainCloud switch: %s", self._name)
+        if self._sensor_type == 'manual_watering':
+            self._state = bool(self._data.watering_time)
+
+    @property
+    def icon(self):
+        """Icon to use in the frontend, if any."""
+        return self._icon
 
     @property
     def device_state_attributes(self):
@@ -79,11 +96,7 @@ class RainCloudSwitch(Entity):
         attrs = {}
 
         attrs[ATTR_ATTRIBUTION] = CONF_ATTRIBUTION
-        attrs['serial'] = self._data.serial
         attrs['current_time'] = self._data.current_time
+        attrs['default_manual_timer'] = self._default_watering_timer
+        attrs['identifier'] = self._data.serial
         return attrs
-
-    @property
-    def icon(self):
-        """Icon to use in the frontend, if any."""
-        return self._icon

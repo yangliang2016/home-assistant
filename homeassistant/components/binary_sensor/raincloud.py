@@ -9,11 +9,11 @@ import logging
 import voluptuous as vol
 
 import homeassistant.helpers.config_validation as cv
-from homeassistant.components.raincloud import DEFAULT_ENTITY_NAMESPACE
+from homeassistant.components.raincloud import CONF_ATTRIBUTION
 from homeassistant.components.binary_sensor import (
     BinarySensorDevice, PLATFORM_SCHEMA)
 from homeassistant.const import (
-    CONF_ENTITY_NAMESPACE, CONF_MONITORED_CONDITIONS)
+    CONF_MONITORED_CONDITIONS, ATTR_ATTRIBUTION)
 
 DEPENDENCIES = ['raincloud']
 
@@ -26,8 +26,6 @@ SENSOR_TYPES = {
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Optional(CONF_ENTITY_NAMESPACE, default=DEFAULT_ENTITY_NAMESPACE):
-        cv.string,
     vol.Required(CONF_MONITORED_CONDITIONS, default=list(SENSOR_TYPES)):
         vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
 })
@@ -93,3 +91,13 @@ class RainCloudBinarySensor(BinarySensorDevice):
         elif self._sensor_type == 'status':
             return 'mdi:pipe' if self.is_on else 'mdi:pipe-disconnected'
         return SENSOR_TYPES.get(self._sensor_type)[1]
+
+    @property
+    def device_state_attributes(self):
+        """Return the state attributes."""
+        attrs = {}
+
+        attrs[ATTR_ATTRIBUTION] = CONF_ATTRIBUTION
+        attrs['current_time'] = self._data.current_time
+        attrs['identifier'] = self._data.serial
+        return attrs
