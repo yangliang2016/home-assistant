@@ -9,12 +9,10 @@ import logging
 import voluptuous as vol
 
 import homeassistant.helpers.config_validation as cv
-from homeassistant.components.raincloud import (
-    CONF_ATTRIBUTION, DEFAULT_ENTITY_NAMESPACE)
+from homeassistant.components.raincloud import CONF_ATTRIBUTION
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import (
-    CONF_ENTITY_NAMESPACE, CONF_MONITORED_CONDITIONS,
-    STATE_UNKNOWN, ATTR_ATTRIBUTION)
+    CONF_MONITORED_CONDITIONS, STATE_UNKNOWN, ATTR_ATTRIBUTION)
 from homeassistant.helpers.entity import Entity
 
 DEPENDENCIES = ['raincloud']
@@ -23,16 +21,13 @@ _LOGGER = logging.getLogger(__name__)
 
 # Sensor types: label, desc, unit, icon
 SENSOR_TYPES = {
-    'battery': ['Battery', '%', 'battery-50'],
+    'battery': ['Battery', '%', ''],
     'next_cycle': ['Next Cycle', '', 'calendar-clock'],
     'rain_delay': ['Rain Delay', 'days', 'weather-rainy'],
-    'status': ['Status', '', 'access-point-network'],
-    'watering_time': ['Watering Time', 'min', 'water-pump'],
+    'watering_time': ['Remaining Watering Time', 'min', 'water-pump'],
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Optional(CONF_ENTITY_NAMESPACE, default=DEFAULT_ENTITY_NAMESPACE):
-        cv.string,
     vol.Required(CONF_MONITORED_CONDITIONS, default=list(SENSOR_TYPES)):
         vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
 })
@@ -40,29 +35,18 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up a sensor for a raincloud device."""
-    raincloud = hass.data.get('raincloud')._data
+    raincloud = hass.data.get('raincloud').data
 
     sensors = []
     for sensor_type in config.get(CONF_MONITORED_CONDITIONS):
-        if sensor_type == 'status':
+        if sensor_type == 'battery':
             sensors.append(
-                RainCloudSensor(hass,
-                                raincloud.controller,
-                                sensor_type))
-            sensors.append(
-                RainCloudSensor(hass,
-                                raincloud.controller.faucet,
-                                sensor_type))
-
-        elif sensor_type == 'battery':
-            sensors.append(
-                RainCloudSensor(hass,
-                                raincloud.controller.faucet,
+                RainCloudSensor(raincloud.controller.faucet,
                                 sensor_type))
         else:
-            # create an sensor for each zone managed by faucet
+            # create an sensor for each zone managed by a faucet
             for zone in raincloud.controller.faucet.zones:
-                sensors.append(RainCloudSensor(hass, zone, sensor_type))
+                sensors.append(RainCloudSensor(zone, sensor_type))
 
     add_devices(sensors, True)
     return True
@@ -71,12 +55,10 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class RainCloudSensor(Entity):
     """A sensor implementation for raincloud device."""
 
-    def __init__(self, hass, data, sensor_type):
+    def __init__(self, data, sensor_type):
         """Initialize a sensor for raincloud device."""
-        super(RainCloudSensor, self).__init__()
-        self._sensor_type = sensor_type
         self._data = data
-        self._extra = None
+        self._sensor_type = sensor_type
         self._icon = 'mdi:{}'.format(SENSOR_TYPES.get(self._sensor_type)[2])
         self._name = "{0} {1}".format(
             self._data.name, SENSOR_TYPES.get(self._sensor_type)[0])
@@ -90,21 +72,24 @@ class RainCloudSensor(Entity):
     @property
     def state(self):
         """Return the state of the sensor."""
+        _LOGGER.debug("Updating RainCloud sensor: %s", self._name)
+        if self._sensor_type == 'battery':
+            self._state = self._data.battery.strip('%')
+        else:
+            self._state = getattr(self._data, self._sensor_type)
         return self._state
-
-    @property
-    def device_state_attributes(self):
-        """Return the state attributes."""
-        attrs = {}
-
-        attrs[ATTR_ATTRIBUTION] = CONF_ATTRIBUTION
-        attrs['serial'] = self._data.serial
-        attrs['current_time'] = self._data.current_time
-        return attrs
 
     @property
     def icon(self):
         """Icon to use in the frontend, if any."""
+        if self._sensor_type == 'battery' and self._state is not STATE_UNKNOWN:
+            rounded_level = round(int(self._state), -1)
+            if rounded_level < 10:
+                self._icon = 'mdi:battery-outline'
+            elif self._state == 100:
+                self._icon = 'mdi:battery'
+            else:
+                self._icon = 'mdi:battery-{}'.format(str(rounded_level))
         return self._icon
 
     @property
@@ -112,14 +97,12 @@ class RainCloudSensor(Entity):
         """Return the units of measurement."""
         return SENSOR_TYPES.get(self._sensor_type)[1]
 
-    def update(self):
-        """Get the latest data and updates the state."""
-        _LOGGER.info("MMM sensor update")
+    @property
+    def device_state_attributes(self):
+        """Return the state attributes."""
+        attrs = {}
 
-        if self._sensor_type == 'battery':
-            # run just 1 update
-            self._data.update()
-            self._state = self._data.battery.strip('%')
-
-        else:
-            self._state = getattr(self._data, self._sensor_type)
+        attrs[ATTR_ATTRIBUTION] = CONF_ATTRIBUTION
+        attrs['identifier'] = self._data.serial
+        attrs['current_time'] = self._data.current_time
+        return attrs

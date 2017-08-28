@@ -9,25 +9,23 @@ import logging
 import voluptuous as vol
 
 import homeassistant.helpers.config_validation as cv
-from homeassistant.components.raincloud import DEFAULT_ENTITY_NAMESPACE
+from homeassistant.components.raincloud import CONF_ATTRIBUTION
 from homeassistant.components.binary_sensor import (
     BinarySensorDevice, PLATFORM_SCHEMA)
 from homeassistant.const import (
-    CONF_ENTITY_NAMESPACE, CONF_MONITORED_CONDITIONS)
+    CONF_MONITORED_CONDITIONS, ATTR_ATTRIBUTION)
 
 DEPENDENCIES = ['raincloud']
 
 _LOGGER = logging.getLogger(__name__)
 
 SENSOR_TYPES = {
-    'auto_watering': ['Auto Watering', ''],
-    'is_watering': ['Watering', 'moisture'],
+    'auto_watering': ['Auto Watering', 'mdi:autorenew'],
+    'is_watering': ['Watering', ''],
     'status': ['Status', ''],
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Optional(CONF_ENTITY_NAMESPACE, default=DEFAULT_ENTITY_NAMESPACE):
-        cv.string,
     vol.Required(CONF_MONITORED_CONDITIONS, default=list(SENSOR_TYPES)):
         vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
 })
@@ -35,7 +33,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up a sensor for a raincloud device."""
-    raincloud = hass.data.get('raincloud')._data
+    raincloud = hass.data.get('raincloud').data
 
     sensors = []
     for sensor_type in config.get(CONF_MONITORED_CONDITIONS):
@@ -82,9 +80,24 @@ class RainCloudBinarySensor(BinarySensorDevice):
 
     def update(self):
         """Get the latest data and updates the state."""
+        _LOGGER.debug("Updating RainCloud sensor: %s", self._name)
         self._state = getattr(self._data, self._sensor_type)
 
     @property
-    def device_class(self):
-        """Return the class of this device."""
+    def icon(self):
+        """Return the icon of this device."""
+        if self._sensor_type == 'is_watering':
+            return 'mdi:water' if self.is_on else 'mdi:water-off'
+        elif self._sensor_type == 'status':
+            return 'mdi:pipe' if self.is_on else 'mdi:pipe-disconnected'
         return SENSOR_TYPES.get(self._sensor_type)[1]
+
+    @property
+    def device_state_attributes(self):
+        """Return the state attributes."""
+        attrs = {}
+
+        attrs[ATTR_ATTRIBUTION] = CONF_ATTRIBUTION
+        attrs['current_time'] = self._data.current_time
+        attrs['identifier'] = self._data.serial
+        return attrs
