@@ -105,6 +105,6 @@ class RingBinarySensor(BinarySensorDevice):
         if self._data.alert:
             if self._sensor_type == self._data.alert.get('kind') and \
                self._data.account_id == self._data.alert.get('doorbot_id'):
-            self._state = True
+                self._state = True
         else:
             self._state = False
