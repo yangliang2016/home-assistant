@@ -20,7 +20,8 @@ _LOGGER = logging.getLogger(__name__)
 
 # Sensor types: label, desc, unit, icon
 SENSOR_TYPES = {
-    'manual_watering': ['Manual Watering', '', 'water-pump'],
+    'auto_watering': ['Automatic Watering', 'mdi:autorenew'],
+    'manual_watering': ['Manual Watering', 'water-pump'],
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -54,7 +55,7 @@ class RainCloudSwitch(SwitchDevice):
         self._sensor_type = sensor_type
         self._data = data
         self._default_watering_timer = default_watering_timer
-        self._icon = 'mdi:{}'.format(SENSOR_TYPES.get(self._sensor_type)[2])
+        self._icon = 'mdi:{}'.format(SENSOR_TYPES.get(self._sensor_type)[1])
         self._name = "{0} {1}".format(
             self._data.name, SENSOR_TYPES.get(self._sensor_type)[0])
         self._state = None
@@ -71,12 +72,18 @@ class RainCloudSwitch(SwitchDevice):
 
     def turn_on(self):
         """Turn the device on."""
-        self._data.watering_time = self._default_watering_timer
+        if self._sensor_type == 'manual_watering':
+            self._data.watering_time = self._default_watering_timer
+        elif self._sensor_type == 'auto_watering':
+            self._data.auto_watering = True
         self._state = True
 
     def turn_off(self):
         """Turn the device off."""
-        self._data.watering_time = 'off'
+        if self._sensor_type == 'manual_watering':
+            self._data.watering_time = 'off'
+        elif self._sensor_type == 'auto_watering':
+            self._data.auto_watering = False
         self._state = False
 
     def update(self):
@@ -84,6 +91,8 @@ class RainCloudSwitch(SwitchDevice):
         _LOGGER.debug("Updating RainCloud switch: %s", self._name)
         if self._sensor_type == 'manual_watering':
             self._state = bool(self._data.watering_time)
+        elif self._sensor_type == 'auto_watering':
+            self._state = self._data.auto_watering
 
     @property
     def icon(self):

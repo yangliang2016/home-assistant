@@ -20,7 +20,6 @@ DEPENDENCIES = ['raincloud']
 _LOGGER = logging.getLogger(__name__)
 
 SENSOR_TYPES = {
-    'auto_watering': ['Auto Watering', 'mdi:autorenew'],
     'is_watering': ['Watering', ''],
     'status': ['Status', ''],
 }
