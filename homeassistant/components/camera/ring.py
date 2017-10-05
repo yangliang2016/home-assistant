@@ -114,11 +114,12 @@ class RingCam(Camera):
 
         # refresh last_video_id if a new video has been published
         if self._last_video_id != self._camera.last_recording_id:
-            _LOGGER.debug("--- UPDATED RING VIDEO URL ----")
-            self._video_url = \
-                self._camera.recording_url(self._camera.last_recording_id)
+            self._refresh_attrs()
 
         if self._utc_now >= self._expires_at:
-            _LOGGER.debug("--- UPDATED RING VIDEO URL ----")
-            self._video_url = \
-                self._camera.recording_url(self._camera.last_recording_id)
+            self._refresh_attrs()
+
+    def _refresh_attrs(self):
+        _LOGGER.debug("--- UPDATED RING VIDEO URL ----")
+        self._last_video_id = self._camera.last_recording_id
+        self._video_url = self._camera.recording_url(self._last_video_id)
