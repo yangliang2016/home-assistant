@@ -11,7 +11,7 @@ import voluptuous as vol
 
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.ring import (
-    CONF_ATTRIBUTION, DEFAULT_ENTITY_NAMESPACE)
+    CONF_ATTRIBUTION, DEFAULT_ENTITY_NAMESPACE, DATA_RING)
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import (
     CONF_ENTITY_NAMESPACE, CONF_MONITORED_CONDITIONS,
@@ -43,7 +43,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up a sensor for a Ring device."""
-    ring = hass.data.get('ring')
+    ring = hass.data[DATA_RING]
 
     sensors = []
     for sensor_type in config.get(CONF_MONITORED_CONDITIONS):

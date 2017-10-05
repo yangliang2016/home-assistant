@@ -21,6 +21,7 @@ CONF_ATTRIBUTION = "Data provided by Ring.com"
 NOTIFICATION_ID = 'ring_notification'
 NOTIFICATION_TITLE = 'Ring Sensor Setup'
 
+DATA_RING = 'ring'
 DOMAIN = 'ring'
 DEFAULT_CACHEDB = '.ring_cache.pickle'
 DEFAULT_ENTITY_NAMESPACE = 'ring'
