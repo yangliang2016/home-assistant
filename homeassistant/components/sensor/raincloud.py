@@ -55,7 +55,7 @@ class RainCloudSensor(RainCloudEntity):
     def update(self):
         """Get the latest data and updates the states."""
         _LOGGER.debug("Updating RainCloud sensor: %s", self._name)
-        if self._sensor_type == 'battery':
+        if self._sensor_type == 'battery' and self._state is not None:
             self._state = self.data.battery.strip('%')
         else:
             self._state = getattr(self.data, self._sensor_type)
