@@ -32,12 +32,14 @@ SENSOR_TYPES = {
     'last_ding': ['Last Ding', ['doorbell'], None, 'history', 'ding'],
     'last_motion': ['Last Motion', ['doorbell'], None, 'history', 'motion'],
     'volume': ['Volume', ['chime', 'doorbell'], None, 'bell-ring', None],
+    'wifi_signal_category': ['WiFi Signal Category', ['chime', 'doorbell'], None, 'wifi', None],
+    'wifi_signal_strength': ['WiFi Signal Strength', ['chime', 'doorbell'], 'dBm', 'wifi', None],
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_ENTITY_NAMESPACE, default=DEFAULT_ENTITY_NAMESPACE):
         cv.string,
-    vol.Required(CONF_MONITORED_CONDITIONS, default=[]):
+    vol.Required(CONF_MONITORED_CONDITIONS, default=list(SENSOR_TYPES)):
         vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
 })
 
@@ -97,6 +99,7 @@ class RingSensor(Entity):
         attrs['kind'] = self._data.kind
         attrs['timezone'] = self._data.timezone
         attrs['type'] = self._data.family
+        attrs['wifi_name'] = self._data.wifi_name
 
         if self._extra and self._sensor_type.startswith('last_'):
             attrs['created_at'] = self._extra['created_at']
@@ -132,10 +135,18 @@ class RingSensor(Entity):
             self._state = self._data.battery_life
 
         if self._sensor_type.startswith('last_'):
-            history = self._data.history(timezone=self._tz,
-                                         kind=self._kind)
+            history = self._data.history(limit=5,
+                                         timezone=self._tz,
+                                         kind=self._kind,
+                                         enforce_limit=True)
             if history:
                 self._extra = history[0]
                 created_at = self._extra['created_at']
                 self._state = '{0:0>2}:{1:0>2}'.format(
                     created_at.hour, created_at.minute)
+
+        if self._sensor_type == 'wifi_signal_category':
+            self._state = self._data.wifi_signal_category
+
+        if self._sensor_type == 'wifi_signal_strength':
+            self._state = self._data.wifi_signal_strength
