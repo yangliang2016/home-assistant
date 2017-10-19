@@ -57,7 +57,7 @@ class RingCam(Camera):
         self._last_video_id = self._camera.last_recording_id
         self._video_url = self._camera.recording_url(self._last_video_id)
         self._expires_at = None
-        self._utc_now = None
+        self._utcnow = None
 
     @property
     def name(self):
@@ -111,8 +111,8 @@ class RingCam(Camera):
             'multipart/x-mixed-replace;boundary=ffserver')
         yield from stream.close()
 
-
     def update(self):
+        """Update camera entity and refresh attributes."""
         _LOGGER.debug("--- RING CALLING DEBUG ----")
         x_amz_expires = int(self._video_url.split('&')[0].split('=')[-1])
         x_amz_date = self._video_url.split('&')[1].split('=')[-1]

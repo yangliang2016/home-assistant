@@ -31,9 +31,12 @@ SENSOR_TYPES = {
     'last_activity': ['Last Activity', ['doorbell'], None, 'history', None],
     'last_ding': ['Last Ding', ['doorbell'], None, 'history', 'ding'],
     'last_motion': ['Last Motion', ['doorbell'], None, 'history', 'motion'],
-    'volume': ['Volume', ['chime', 'doorbell'], None, 'bell-ring', None],
-    'wifi_signal_category': ['WiFi Signal Category', ['chime', 'doorbell'], None, 'wifi', None],
-    'wifi_signal_strength': ['WiFi Signal Strength', ['chime', 'doorbell'], 'dBm', 'wifi', None],
+    'volume':
+        ['Volume', ['chime', 'doorbell'], None, 'bell-ring', None],
+    'wifi_signal_category':
+        ['WiFi Signal Category', ['chime', 'doorbell'], None, 'wifi', None],
+    'wifi_signal_strength':
+        ['WiFi Signal Strength', ['chime', 'doorbell'], 'dBm', 'wifi', None],
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
