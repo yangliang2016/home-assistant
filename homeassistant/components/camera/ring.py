@@ -89,9 +89,9 @@ class RingCam(Camera):
         if self._video_url is None:
             return
 
-        image = yield from ffmpeg.get_image(
+        image = yield from asyncio.shield(ffmpeg.get_image(
             self._video_url, output_format=IMAGE_JPEG,
-            extra_cmd=self._ffmpeg_arguments)
+            extra_cmd=self._ffmpeg_arguments), loop=self.hass.loop)
         return image
 
     @asyncio.coroutine
@@ -113,7 +113,6 @@ class RingCam(Camera):
 
     def update(self):
         """Update camera entity and refresh attributes."""
-        _LOGGER.debug("--- RING CALLING DEBUG ----")
         x_amz_expires = int(self._video_url.split('&')[0].split('=')[-1])
         x_amz_date = self._video_url.split('&')[1].split('=')[-1]
 
@@ -131,6 +130,6 @@ class RingCam(Camera):
             self._refresh_attrs()
 
     def _refresh_attrs(self):
-        _LOGGER.debug("--- UPDATED RING VIDEO URL ----")
+        _LOGGER.debug("Updated Ring DoorBell camera attributes.")
         self._last_video_id = self._camera.last_recording_id
         self._video_url = self._camera.recording_url(self._last_video_id)
